@@ -5,760 +5,1524 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Training Tracker</title>
   <style>
-    :root{
-      --brand-from:#2563eb; --brand-to:#7c3aed;
-      --bg:#f6f7fb; --panel:#ffffff; --text:#111827; --muted:#6b7280; --ring:#e5e7eb;
-      --ok:#16a34a; --bad:#dc2626; --accent:#f97316;
-      /* column widths */
-      --col-emp: 240px; --col-class: 220px; --col-prog: 160px;
+    .tt-app {
+      --tt-brand-from:#2563eb; --tt-brand-to:#7c3aed;
+      --tt-surface:#f6f7fb; --tt-panel:#ffffff; --tt-text:#111827; --tt-muted:#6b7280; --tt-ring:#e5e7eb;
+      --tt-ok:#16a34a; --tt-bad:#dc2626; --tt-accent:#f97316;
+      --tt-col-emp:240px; --tt-col-class:220px; --tt-col-prog:160px;
+      color:var(--tt-text);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Noto Sans",sans-serif;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+      padding:16px;
+      background:var(--tt-surface);
     }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
-    .nav{position:sticky;top:0;z-index:10;background:linear-gradient(90deg,var(--brand-from),var(--brand-to));color:#fff;box-shadow:0 2px 12px rgba(0,0,0,.18)}
-    .nav-inner{display:flex;align-items:center;gap:8px;padding:12px}
-    .nav h1{font-size:16px;margin:0 8px 0 0}
-    .badge{font-size:11px;padding:2px 6px;border-radius:999px;background:#ecfeff;color:#155e75;border:1px solid #a5f3fc}
+    .tt-app * { box-sizing:border-box; }
+    .tt-app a { color:inherit; }
 
-    .wrap{max-width:1400px;margin:16px auto;padding:0 12px 36px;display:grid;gap:12px}
-    .panel{background:var(--panel);border:1px solid var(--ring);border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.06);padding:12px}
-
-    .pilltabs{display:flex;gap:8px;flex-wrap:wrap}
-    .pilltab{border:1px solid var(--ring);background:#fff;color:#111827;padding:6px 12px;border-radius:999px;cursor:pointer}
-    .pilltab[aria-current="page"]{background:linear-gradient(90deg,var(--brand-from),var(--brand-to));color:#fff;border-color:transparent}
-
-    .grid{overflow:auto}
-    table{border-collapse:separate;border-spacing:0}
-    thead th{position:sticky;top:0;background:var(--brand-from);color:#fff;text-align:left;padding:6px 8px;font-weight:700;border-right:1px solid rgba(255,255,255,.25); z-index:3}
-    tbody td{padding:6px 8px;border-right:1px solid var(--ring);border-bottom:1px solid var(--ring);vertical-align:top}
-    tbody tr:nth-child(odd){background:#fff}
-    tbody tr:nth-child(even){background:#f8fafc}
-    .status-ok{color:var(--ok);font-weight:700}
-    .status-miss{color:var(--bad);font-weight:700}
-    .progress{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden}
-    .progress > span{display:block;height:100%;background:linear-gradient(90deg,var(--brand-from),var(--brand-to))}
-
-    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
-    select,input[type="text"]{padding:6px 8px;border:1px solid var(--ring);border-radius:8px;font:inherit}
-    .muted{color:var(--muted)}
-    .hidden{display:none!important}
-
-    /* Fixed readable column widths + horizontal scroll for overview */
-    #overviewTbl{ table-layout:auto; width:max-content; min-width:100%; }
-    th.emp-col, td.emp-col{ position:sticky; left:0; background:var(--panel); z-index:2; min-width:var(--col-emp); }
-    th.cls-col, td.cls-col{ min-width:var(--col-class); }
-    th.prog-col, td.prog-col{ min-width:var(--col-prog); }
-
-    /* Orange checklist styling & section layout (Employee Detail) */
-    .checkbox{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
-    .checkbox input{position:absolute;opacity:0;width:1px;height:1px}
-    .checkbox .box{width:18px;height:18px;border:3px solid var(--accent);border-radius:2px;display:inline-block;position:relative;background:#fff}
-    .checkbox input:checked + .box{background:var(--accent);border-color:var(--accent);} .checkbox input:checked + .box::after{content:"";position:absolute;left:3px;top:-1px;width:8px;height:14px;border-right:3px solid #ffffff;border-bottom:3px solid #ffffff;transform:rotate(45deg)}
-    .area-block{margin:12px 0 20px}
-    .area-title{color:var(--accent);font-weight:800;font-size:18px;margin:0 0 8px 0;border-bottom:2px solid var(--accent);display:inline-block;padding-bottom:2px}
-
-    .area-rows{display:flex;flex-direction:column;gap:12px}
-    .rowcard{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--ring);border-radius:14px;background:#fff;box-shadow:0 6px 16px rgba(15,23,42,0.06);transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease}
-    .rowcard:hover{border-color:#cbd5f5;box-shadow:0 10px 22px rgba(15,23,42,0.12);transform:translateY(-1px)}
-    .rowcard.open{border-color:#a5b4fc}
-    .statusbtn{width:28px;height:28px;border-radius:8px;border:2px solid var(--accent);background:transparent;display:inline-flex;align-items:center;justify-content:center;color:var(--accent);font-weight:700;cursor:pointer;transition:all .2s ease;flex-shrink:0}
-    .statusbtn svg{width:16px;height:16px}
-    .statusbtn[aria-pressed="true"]{background:linear-gradient(135deg,var(--brand-from),var(--brand-to));border-color:transparent;color:#fff;box-shadow:0 0 0 1px rgba(255,255,255,0.4) inset}
-    .statusbtn:focus-visible{outline:3px solid rgba(59,130,246,0.35);outline-offset:2px}
-
-    .summary{display:flex;flex-direction:column;align-items:flex-start;gap:4px;background:none;border:none;text-align:left;padding:0;color:inherit;font:inherit;cursor:pointer}
-    .summary .title{font-weight:600;font-size:15px;color:#111827}
-    .summary .meta{font-size:13px;color:var(--muted)}
-
-    .chev{background:none;border:none;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;width:28px;height:28px;transition:transform .2s ease}
-    .rowcard.open .chev{transform:rotate(90deg);color:var(--accent)}
-
-    .details{grid-column:1/-1;padding-top:12px;border-top:1px solid #e5e7eb;margin-top:12px;overflow:hidden;max-height:0;opacity:0;transition:max-height .24s ease,opacity .2s ease}
-    .rowcard.open .details{max-height:600px;opacity:1}
-    .details[hidden]{display:block;max-height:0;opacity:0;padding-top:0;margin-top:0;border-top:none}
-    .note{width:100%;min-height:88px;resize:vertical;border-radius:12px;border:1px solid var(--ring);padding:10px;font:inherit;line-height:1.4;box-shadow:0 2px 6px rgba(15,23,42,0.05);transition:border-color .2s ease,box-shadow .2s ease}
-    .note:focus{border-color:#a5b4fc;box-shadow:0 4px 16px rgba(99,102,241,0.25)}
-    .actions{display:flex;gap:8px;margin-top:8px}
-    .actions button{padding:6px 12px;border-radius:999px;border:1px solid var(--ring);background:#fff;font:inherit;cursor:pointer;transition:background .2s ease,border-color .2s ease,transform .2s ease}
-    .actions button:hover{background:#f3f4ff;border-color:#c7d2fe}
-    .actions .done{background:linear-gradient(135deg,var(--brand-from),var(--brand-to));color:#fff;border:none;box-shadow:0 4px 12px rgba(99,102,241,0.35)}
-    .actions .done:hover{transform:translateY(-1px)}
-
-    .photostrip{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-    .thumb{position:relative;width:72px;height:72px;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(15,23,42,0.16)}
-    .thumb img{width:100%;height:100%;object-fit:cover;display:block}
-    .thumb button{position:absolute;top:4px;right:4px;width:20px;height:20px;border:none;border-radius:50%;background:rgba(15,23,42,0.76);color:#fff;font-size:12px;cursor:pointer}
-    .thumb button:hover{background:rgba(220,38,38,0.85)}
-
-    @media (max-width:720px){
-      .rowcard{grid-template-columns:auto 1fr auto;gap:10px;padding:12px}
-      .statusbtn{width:26px;height:26px}
-      .summary .title{font-size:14px}
-      .summary .meta{font-size:12px}
+    .tt-panel {
+      background:var(--tt-panel);
+      border:1px solid var(--tt-ring);
+      border-radius:12px;
+      box-shadow:0 2px 10px rgba(0,0,0,0.06);
+      padding:12px;
     }
-    .sigline{border:none;border-bottom:2px solid #111827;background:transparent;min-width:220px;padding:4px 6px}
-    .sig-row{align-items:flex-end;gap:16px}
-    .spacer{flex:1 1 auto}
+
+    .tt-header-panel {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .tt-header-panel h1 {
+      margin:0;
+      font-size:18px;
+      font-weight:700;
+    }
+    .tt-badge {
+      font-size:11px;
+      padding:2px 6px;
+      border-radius:999px;
+      background:#ecfeff;
+      color:#155e75;
+      border:1px solid #a5f3fc;
+    }
+
+    .tt-pilltabs {
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .tt-pilltab {
+      border:1px solid var(--tt-ring);
+      background:#fff;
+      color:var(--tt-text);
+      padding:6px 12px;
+      border-radius:999px;
+      cursor:pointer;
+      font:inherit;
+    }
+    .tt-pilltab[aria-current="page"] {
+      background:linear-gradient(90deg,var(--tt-brand-from),var(--tt-brand-to));
+      color:#fff;
+      border-color:transparent;
+    }
+
+    .tt-row {
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:center;
+      margin:8px 0;
+    }
+    .tt-row label {
+      display:flex;
+      flex-direction:column;
+      font-size:13px;
+      gap:4px;
+    }
+    .tt-row select,
+    .tt-row input[type="text"] {
+      padding:6px 8px;
+      border:1px solid var(--tt-ring);
+      border-radius:8px;
+      font:inherit;
+    }
+    .tt-muted { color:var(--tt-muted); }
+    .tt-hidden { display:none!important; }
+
+    .tt-grid {
+      position:relative;
+      overflow:auto;
+      border:1px solid var(--tt-ring);
+      border-radius:12px;
+      background:#fff;
+    }
+    .tt-grid table {
+      border-collapse:separate;
+      border-spacing:0;
+      min-width:100%;
+      width:max-content;
+    }
+    .tt-grid thead th {
+      position:sticky;
+      top:0;
+      background:linear-gradient(90deg,var(--tt-brand-from),var(--tt-brand-to));
+      color:#fff;
+      text-align:left;
+      padding:6px 8px;
+      font-weight:700;
+      border-right:1px solid rgba(255,255,255,0.25);
+      z-index:3;
+      min-width:var(--tt-col-class);
+    }
+    .tt-grid thead th.tt-emp-col { min-width:var(--tt-col-emp); }
+    .tt-grid thead th.tt-prog-col { min-width:var(--tt-col-prog); }
+    .tt-grid tbody tr:nth-child(odd) { background:#fff; }
+    .tt-grid tbody tr:nth-child(even) { background:#f8fafc; }
+    .tt-grid tbody th,
+    .tt-grid tbody td {
+      padding:6px 8px;
+      border-right:1px solid var(--tt-ring);
+      border-bottom:1px solid var(--tt-ring);
+      vertical-align:top;
+      min-width:var(--tt-col-class);
+    }
+    .tt-grid tbody th.tt-emp-col,
+    .tt-grid thead th.tt-emp-col {
+      position:sticky;
+      left:0;
+      background:#fff;
+      z-index:4;
+    }
+    .tt-grid thead th.tt-emp-col { z-index:5; background:linear-gradient(90deg,var(--tt-brand-from),var(--tt-brand-to)); }
+    .tt-grid tbody th.tt-emp-col { background:#fff; min-width:var(--tt-col-emp); }
+    .tt-grid tbody td.tt-prog-col,
+    .tt-grid thead th.tt-prog-col { min-width:var(--tt-col-prog); }
+    .tt-grid tbody tr { cursor:pointer; }
+    .tt-grid tbody tr:focus-visible { outline:2px solid var(--tt-brand-from); outline-offset:-2px; }
+
+    .tt-status-ok { color:var(--tt-ok); font-weight:700; }
+    .tt-status-miss { color:var(--tt-bad); font-weight:700; }
+    .tt-progress {
+      height:10px;
+      background:#e5e7eb;
+      border-radius:999px;
+      overflow:hidden;
+      margin-bottom:4px;
+    }
+    .tt-progress span {
+      display:block;
+      height:100%;
+      background:linear-gradient(90deg,var(--tt-brand-from),var(--tt-brand-to));
+    }
+
+    .tt-empty {
+      padding:24px;
+      text-align:center;
+      color:var(--tt-muted);
+    }
+
+    /* Employee detail cards */
+    .tt-area-block { margin:12px 0 20px; }
+    .tt-area-title {
+      color:var(--tt-accent);
+      font-weight:800;
+      font-size:18px;
+      margin:0 0 8px 0;
+      border-bottom:2px solid var(--tt-accent);
+      display:inline-block;
+      padding-bottom:2px;
+    }
+    .tt-area-rows { display:flex; flex-direction:column; gap:12px; }
+    .tt-rowcard {
+      display:grid;
+      grid-template-columns:auto 1fr auto;
+      align-items:center;
+      gap:12px;
+      padding:14px 16px;
+      border:1px solid var(--tt-ring);
+      border-radius:14px;
+      background:#fff;
+      box-shadow:0 6px 16px rgba(15,23,42,0.06);
+      transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease;
+    }
+    .tt-rowcard:hover { border-color:#cbd5f5; box-shadow:0 10px 22px rgba(15,23,42,0.12); transform:translateY(-1px); }
+    .tt-rowcard.tt-open { border-color:#a5b4fc; }
+    .tt-statusbtn {
+      width:28px;
+      height:28px;
+      border-radius:8px;
+      border:2px solid var(--tt-accent);
+      background:transparent;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      color:var(--tt-accent);
+      font-weight:700;
+      cursor:pointer;
+      transition:all .2s ease;
+      flex-shrink:0;
+    }
+    .tt-statusbtn svg { width:16px; height:16px; }
+    .tt-statusbtn[aria-pressed="true"] {
+      background:linear-gradient(135deg,var(--tt-brand-from),var(--tt-brand-to));
+      border-color:transparent;
+      color:#fff;
+      box-shadow:0 0 0 1px rgba(255,255,255,0.4) inset;
+    }
+    .tt-statusbtn:focus-visible { outline:3px solid rgba(59,130,246,0.35); outline-offset:2px; }
+
+    .tt-summary {
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      gap:4px;
+      background:none;
+      border:none;
+      text-align:left;
+      padding:0;
+      color:inherit;
+      font:inherit;
+      cursor:pointer;
+    }
+    .tt-summary .tt-title { font-weight:600; font-size:15px; color:#111827; }
+    .tt-summary .tt-meta { font-size:13px; color:var(--tt-muted); }
+
+    .tt-chev {
+      background:none;
+      border:none;
+      color:var(--tt-muted);
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      width:28px;
+      height:28px;
+      transition:transform .2s ease;
+    }
+    .tt-rowcard.tt-open .tt-chev { transform:rotate(90deg); color:var(--tt-accent); }
+
+    .tt-details {
+      grid-column:1/-1;
+      padding-top:12px;
+      border-top:1px solid #e5e7eb;
+      margin-top:12px;
+      overflow:hidden;
+      max-height:0;
+      opacity:0;
+      transition:max-height .24s ease,opacity .2s ease;
+    }
+    .tt-rowcard.tt-open .tt-details { max-height:600px; opacity:1; }
+    .tt-details[hidden] { display:block; max-height:0; opacity:0; padding-top:0; margin-top:0; border-top:none; }
+    .tt-note {
+      width:100%;
+      min-height:88px;
+      resize:vertical;
+      border-radius:12px;
+      border:1px solid var(--tt-ring);
+      padding:10px;
+      font:inherit;
+      line-height:1.4;
+      box-shadow:0 2px 6px rgba(15,23,42,0.05);
+      transition:border-color .2s ease,box-shadow .2s ease;
+    }
+    .tt-note:focus { border-color:#a5b4fc; box-shadow:0 4px 16px rgba(99,102,241,0.25); }
+    .tt-actions { display:flex; gap:8px; margin-top:8px; }
+    .tt-actions button {
+      padding:6px 12px;
+      border-radius:999px;
+      border:1px solid var(--tt-ring);
+      background:#fff;
+      font:inherit;
+      cursor:pointer;
+      transition:background .2s ease,border-color .2s ease,transform .2s ease;
+    }
+    .tt-actions button:hover { background:#f3f4ff; border-color:#c7d2fe; }
+    .tt-actions .tt-done {
+      background:linear-gradient(135deg,var(--tt-brand-from),var(--tt-brand-to));
+      color:#fff;
+      border:none;
+      box-shadow:0 4px 12px rgba(99,102,241,0.35);
+    }
+    .tt-actions .tt-done:hover { transform:translateY(-1px); }
+
+    .tt-photostrip { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+    .tt-thumb {
+      position:relative;
+      width:72px;
+      height:72px;
+      border-radius:12px;
+      overflow:hidden;
+      box-shadow:0 4px 12px rgba(15,23,42,0.16);
+    }
+    .tt-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+    .tt-thumb button {
+      position:absolute;
+      top:4px;
+      right:4px;
+      width:20px;
+      height:20px;
+      border:none;
+      border-radius:50%;
+      background:rgba(15,23,42,0.76);
+      color:#fff;
+      font-size:12px;
+      cursor:pointer;
+    }
+    .tt-thumb button:hover { background:rgba(220,38,38,0.85); }
+
+    .tt-checkbox {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .tt-checkbox input {
+      position:absolute;
+      opacity:0;
+      width:1px;
+      height:1px;
+    }
+    .tt-box {
+      width:18px;
+      height:18px;
+      border:3px solid var(--tt-accent);
+      border-radius:2px;
+      display:inline-block;
+      position:relative;
+      background:#fff;
+    }
+    .tt-checkbox input:checked + .tt-box {
+      background:var(--tt-accent);
+      border-color:var(--tt-accent);
+    }
+    .tt-checkbox input:checked + .tt-box::after {
+      content:"";
+      position:absolute;
+      left:3px;
+      top:-1px;
+      width:8px;
+      height:14px;
+      border-right:3px solid #fff;
+      border-bottom:3px solid #fff;
+      transform:rotate(45deg);
+    }
+    .tt-sig-row { align-items:flex-end; gap:16px; }
+    .tt-sigline {
+      border:none;
+      border-bottom:2px solid #111827;
+      background:transparent;
+      min-width:220px;
+      padding:4px 6px;
+    }
+    .tt-spacer { flex:1 1 auto; }
+
+    @media (max-width:720px) {
+      .tt-rowcard { grid-template-columns:auto 1fr auto; gap:10px; padding:12px; }
+      .tt-statusbtn { width:26px; height:26px; }
+      .tt-summary .tt-title { font-size:14px; }
+      .tt-summary .tt-meta { font-size:12px; }
+    }
   </style>
 </head>
 <body>
-  <div class="nav">
-    <div class="nav-inner">
-      <h1>Training Tracker</h1>
-      <span id="testBadge" class="badge"></span>
-    </div>
-  </div>
+  <div id="tt-root"></div>
+  <script>
+    (function(){
+      const STORAGE_KEY = 'tt-trainingTrackerState-v1';
+      const defaultEmployees = [
+        {id:'E1',name:'Kaylie Taylor',title:'Concession'},
+        {id:'E2',name:'Noah Walker',title:'Usher'},
+        {id:'E3',name:'Kayden Phillips',title:'Usher'}
+      ];
+      const defaultClasses = [
+        {short:'Unlimited Staff', name:'Regal Unlimited - Team Member', area:'Pre-Board Courses', group:'Level 1'},
+        {short:'Fire Safety', name:'Fire Safety', area:'Compliance', group:'Compliance'},
+        {short:'ADA Staff', name:'Assisting Guests with Disabilities - Team Member', area:'Post-Hire Basics', group:'Level 1'},
+        {short:'CC-DA-ALD', name:'Closed Captioning, Descriptive Audio, and Assisted Listening Devices', area:'Post-Hire Basics', group:'Level 1'},
+        {short:'Cash Handling 1', name:'Cash Handling Part 1', area:'Food Service', group:'Level 1'},
+        {short:'Cash Handling 2', name:'Cash Handling Part 2', area:'Food Service', group:'Level 1'},
+        {short:"Raven Thorn's Popcorn Challenge", name:"Raven Thorn's Popcorn Challenge", area:'Food Service', group:'Level 1'},
+        {short:'Professionalism', name:'Professionalism: Meeting the Standards that Matter', area:'Strategic Business Mindset', group:'Level 2'}
+      ];
 
-  <div class="wrap">
-    <!-- Sub-page pills -->
-    <section class="panel" id="subnav">
-      <div class="pilltabs">
-        <button id="tab-overview" class="pilltab" aria-current="page">Manager Overview</button>
-        <button id="tab-employee" class="pilltab">Employee Detail</button>
-        <button id="tab-catalog" class="pilltab">All Classes</button>
-      </div>
-    </section>
+      const checkSvg = '<svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M8.2 13.4 4.8 10l1.4-1.4 2 2 5.6-5.6 1.4 1.4-7 7z"></path></svg>';
+      const chevronSvg = '<svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M7.2 3.5 5.8 4.9l6.2 6.1-6.2 6.1 1.4 1.4 7.6-7.5-7.6-7.5z"></path></svg>';
 
-    <!-- Overview -->
-    <section id="screen-overview" class="panel">
-      <h2>Manager Overview</h2>
-      <div class="row">
-        <label>Class: <select id="classFilter"></select></label>
-        <label>Category: <select id="catFilter"></select></label>
-        <label>Group: <select id="groupFilter"></select></label>
-        <label>Level: <select id="levelFilter"></select></label>
-        <label>Step: <select id="stepFilter"></select></label>
-        <span class="muted">Click a row to open that employee.</span>
-      </div>
-      <div class="grid">
-        <table id="overviewTbl">
-          <thead id="overviewHead"></thead>
-          <tbody id="overviewBody"></tbody>
-        </table>
-      </div>
-    </section>
+      const slug = (s)=> String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+      const clone = (val)=> JSON.parse(JSON.stringify(val||{}));
 
-    <!-- Employee Detail -->
-    <section id="screen-employee" class="panel hidden">
-      <h2>Employee Detail</h2>
-      <div class="row">
-        <label>Employee: <select id="empSel"></select></label>
-        <label>Category: <select id="empCat"></select></label>
-        <label>Group: <select id="empGroup"></select></label>
-        <label>Level: <select id="empLevel"></select></label>
-        <label>Step: <select id="empStep"></select></label>
-      </div>
-      <div id="detailHost" style="margin-top:8px"></div>
-      <div class="row sig-row">
-        <label class="checkbox"><input type="checkbox" id="empAck"><span class="box"></span><span>Employee Acknowledgement</span></label>
-        <label class="checkbox"><input type="checkbox" id="mgrAck"><span class="box"></span><span>Manager Sign-off</span></label>
-        <span class="spacer"></span>
-        <span>Employee:</span><input type="text" class="sigline" id="empLine" />
-        <span>Buddy:</span><input type="text" class="sigline" id="buddyLine" />
-      </div>
-    </section>
-
-    <!-- Catalog -->
-    <section id="screen-catalog" class="panel hidden">
-      <h2>All Classes</h2>
-      <div class="row">
-        <label>Search: <input type="text" id="catalogSearch" placeholder="Type to filter by name or short id"/></label>
-        <label>Category: <select id="catalogCat"></select></label>
-        <label>Group: <select id="catalogGroup"></select></label>
-        <label>Level: <select id="catalogLevel"></select></label>
-        <label>Step: <select id="catalogStep"></select></label>
-      </div>
-      <div class="grid">
-        <table>
-          <thead><tr><th>Short</th><th>Name</th><th>Category</th><th>Group</th><th>Level</th><th>Step</th></tr></thead>
-          <tbody id="catalogBody"></tbody>
-        </table>
-      </div>
-    </section>
-  </div>
-
-<script>
-// ---------- Utilities ----------
-const $ = (id)=>document.getElementById(id);
-const slug = (s)=> String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
-
-// ---------- Navigation ----------
-const tabOverview=$('tab-overview');
-const tabEmployee=$('tab-employee');
-const tabCatalog=$('tab-catalog');
-const screenA=$('screen-overview');
-const screenB=$('screen-employee');
-const screenC=$('screen-catalog');
-function setTab(which){
-  [screenA,screenB,screenC].forEach(s=>s.classList.add('hidden'));
-  [tabOverview,tabEmployee,tabCatalog].forEach(t=>t.removeAttribute('aria-current'));
-  if(which==='overview'){screenA.classList.remove('hidden');tabOverview.setAttribute('aria-current','page');buildOverview();}
-  if(which==='employee'){screenB.classList.remove('hidden');tabEmployee.setAttribute('aria-current','page');renderDetail();}
-  if(which==='catalog'){screenC.classList.remove('hidden');tabCatalog.setAttribute('aria-current','page');buildCatalog();}
-}
-
-// ---------- Data ----------
-const employees=[
-  {id:'E1',name:'Kaylie Taylor',title:'Concession'},
-  {id:'E2',name:'Noah Walker',title:'Usher'},
-  {id:'E3',name:'Kayden Phillips',title:'Usher'}
-];
-
-// Catalog (abbreviated sample; extend as needed)
-const coursesRaw = [
-  {short:'Unlimited Staff', name:'Regal Unlimited - Team Member', area:'Pre-Board Courses', group:'Level 1'},
-  {short:'Fire Safety', name:'Fire Safety', area:'Compliance', group:'Compliance'},
-  {short:'ADA Staff', name:'Assisting Guests with Disabilities - Team Member', area:'Post-Hire Basics', group:'Level 1'},
-  {short:'CC-DA-ALD', name:'Closed Captioning, Descriptive Audio, and Assisted Listening Devices', area:'Post-Hire Basics', group:'Level 1'},
-  {short:'Cash Handling 1', name:'Cash Handling Part 1', area:'Food Service', group:'Level 1'},
-  {short:'Cash Handling 2', name:'Cash Handling Part 2', area:'Food Service', group:'Level 1'},
-  {short:"Raven Thorn's Popcorn Challenge", name:"Raven Thorn's Popcorn Challenge", area:'Food Service', group:'Level 1'},
-  {short:'Professionalism', name:'Professionalism: Meeting the Standards that Matter', area:'Strategic Business Mindset', group:'Level 2'}
-];
-
-// Enrich with stable IDs + derived attributes level/step
-let fullCatalog = coursesRaw.map(r=>{
-  const id = slug(`${r.short}|${r.name}`);
-  let level = '';
-  const m = (r.group||'').match(/level\s*(\d+)/i); if(m) level = `Level ${m[1]}`;
-  let step = '';
-  const p1 = (r.name||'').match(/part\s*(\d+)/i); if(p1) step = p1[1];
-  if(!step){ const p2 = (r.short||'').match(/part\s*(\d+)/i); if(p2) step = p2[1]; }
-  if(!step){ const p3 = (r.short||'').match(/(\d+)$/); if(p3) step = p3[1]; }
-  return { ...r, id, level, step };
-});
-
-let completion={};
-let notes={};
-let photos={};
-const STORAGE_KEY='trainingTrackerState';
-
-function loadState(){
-  if(typeof localStorage==='undefined') return;
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return;
-    const parsed = JSON.parse(raw);
-    completion = parsed.completion || {};
-    notes = parsed.notes || {};
-    photos = parsed.photos || {};
-  }catch(err){
-    console.warn('Failed to load saved state', err);
-  }
-}
-
-function saveState(){
-  if(typeof localStorage==='undefined') return;
-  try{
-    const payload = JSON.stringify({completion, notes, photos});
-    localStorage.setItem(STORAGE_KEY, payload);
-  }catch(err){
-    console.warn('Failed to persist state', err);
-  }
-}
-
-function ensureBucket(store, id){
-  if(!store[id]) store[id] = {};
-  return store[id];
-}
-
-function getNote(empId,classId){
-  return notes[empId]?.[classId] || '';
-}
-
-function setNote(empId,classId,value){
-  const trimmed = value.trim();
-  if(trimmed){
-    ensureBucket(notes, empId)[classId] = value;
-  }else if(notes[empId]){
-    delete notes[empId][classId];
-    if(Object.keys(notes[empId]).length===0) delete notes[empId];
-  }
-  saveState();
-}
-
-function getPhotos(empId,classId){
-  return photos[empId]?.[classId] ? [...photos[empId][classId]] : [];
-}
-
-function setPhotos(empId,classId,list){
-  if(list.length){
-    ensureBucket(photos, empId)[classId] = list;
-  }else if(photos[empId]){
-    delete photos[empId][classId];
-    if(Object.keys(photos[empId]).length===0) delete photos[empId];
-  }
-  saveState();
-}
-
-function toggleCompletion(empId,classId){
-  ensureBucket(completion, empId)[classId] = !completion[empId]?.[classId];
-  saveState();
-  buildOverview();
-}
-
-loadState();
-
-// ---------- Facets ----------
-function uniqueSorted(arr){ return Array.from(new Set(arr.filter(x=>x!==undefined))).sort((a,b)=> String(a).localeCompare(String(b))); }
-function buildFacetOptions(){
-  const cats = uniqueSorted(fullCatalog.map(c=>c.area||''));
-  const groups = uniqueSorted(fullCatalog.map(c=>c.group||''));
-  const levels = uniqueSorted(fullCatalog.map(c=>c.level||''));
-  const steps = uniqueSorted(fullCatalog.map(c=>c.step||''));
-  // Overview filters
-  $('classFilter').innerHTML = '<option value="">All</option>' + fullCatalog.map(c=>`<option value="${c.id}">${c.short}</option>`).join('');
-  $('catFilter').innerHTML = '<option value="">All</option>' + cats.map(x=>`<option>${x}</option>`).join('');
-  $('groupFilter').innerHTML = '<option value="">All</option>' + groups.map(x=>`<option>${x}</option>`).join('');
-  $('levelFilter').innerHTML = '<option value="">All</option>' + levels.map(x=>`<option>${x}</option>`).join('');
-  $('stepFilter').innerHTML = '<option value="">All</option>' + steps.map(x=>`<option>${x}</option>`).join('');
-  // Employee filters
-  $('empCat').innerHTML = '<option value="">All</option>' + cats.map(x=>`<option>${x}</option>`).join('');
-  $('empGroup').innerHTML = '<option value="">All</option>' + groups.map(x=>`<option>${x}</option>`).join('');
-  $('empLevel').innerHTML = '<option value="">All</option>' + levels.map(x=>`<option>${x}</option>`).join('');
-  $('empStep').innerHTML = '<option value="">All</option>' + steps.map(x=>`<option>${x}</option>`).join('');
-  // Catalog filters
-  $('catalogCat').innerHTML = '<option value="">All</option>' + cats.map(x=>`<option>${x}</option>`).join('');
-  $('catalogGroup').innerHTML = '<option value="">All</option>' + groups.map(x=>`<option>${x}</option>`).join('');
-  $('catalogLevel').innerHTML = '<option value="">All</option>' + levels.map(x=>`<option>${x}</option>`).join('');
-  $('catalogStep').innerHTML = '<option value="">All</option>' + steps.map(x=>`<option>${x}</option>`).join('');
-}
-
-// ---------- Overview ----------
-function markHTML(val){ return val ? '<span class="status-ok">✓</span>' : '<span class="status-miss">✗</span>'; }
-function buildOverview(){
-  const head=$('overviewHead'); const body=$('overviewBody');
-  const selectedClass = $('classFilter').value;
-  const cat = $('catFilter').value; const grp = $('groupFilter').value; const lvl = $('levelFilter').value; const stp = $('stepFilter').value;
-
-  if(selectedClass){
-    const cls = fullCatalog.find(c=>c.id===selectedClass);
-    head.innerHTML = `<tr><th class="emp-col">Employee</th><th class="cls-col">${cls?cls.short:'Class'}</th><th class="prog-col">Progress</th></tr>`;
-    body.innerHTML = '';
-    employees.forEach(emp=>{
-      const tr=document.createElement('tr');
-      const info = !!(completion[emp.id]?.[selectedClass]);
-      const total = fullCatalog.length; const done = Object.values(completion[emp.id]||{}).filter(Boolean).length; const pct = total? Math.round(done/total*100):0;
-      tr.innerHTML = `<td class="emp-col">${emp.name}</td>`+
-                     `<td class="cls-col">${markHTML(info)}</td>`+
-                     `<td class="prog-col"><div class="progress"><span style="width:${pct}%"></span></div>${pct}%</td>`;
-      tr.onclick = ()=>{ $('empSel').value=emp.id; setTab('employee'); };
-      body.appendChild(tr);
-    });
-    return;
-  }
-
-  const pool = fullCatalog.filter(c=> (!cat || c.area===cat) && (!grp || c.group===grp) && (!lvl || c.level===lvl) && (!stp || String(c.step)===String(stp)) );
-  head.innerHTML = '<tr><th class="emp-col">Employee</th>' + pool.map(c=>`<th class="cls-col" title="${c.name} — ${c.area||''}${c.level? ' • '+c.level:''}${c.step? ' • Step '+c.step:''}">${c.short}</th>`).join('') + '<th class="prog-col">Progress</th></tr>';
-  body.innerHTML = '';
-  employees.forEach(emp=>{
-    let doneCount=0; const tr=document.createElement('tr'); tr.innerHTML = `<td class="emp-col">${emp.name}</td>`;
-    pool.forEach(cls=>{
-      const val = !!(completion[emp.id]?.[cls.id]); if(val) doneCount++;
-      tr.innerHTML += `<td class="cls-col">${markHTML(val)}</td>`;
-    });
-    const total = pool.length || 1; const pct = Math.round((doneCount/total)*100);
-    tr.innerHTML += `<td class="prog-col"><div class="progress"><span style="width:${pct}%"></span></div>${pct}%</td>`;
-    tr.onclick = ()=>{ $('empSel').value=emp.id; setTab('employee'); };
-    body.appendChild(tr);
-  });
-}
-
-// ---------- Catalog ----------
-function buildCatalog(){
-  const term = $('catalogSearch').value?.toLowerCase()||'';
-  const cat = $('catalogCat').value; const grp = $('catalogGroup').value; const lvl = $('catalogLevel').value; const stp = $('catalogStep').value;
-  const list = fullCatalog
-    .filter(c=> (!cat || c.area===cat) && (!grp || c.group===grp) && (!lvl || c.level===lvl) && (!stp || String(c.step)===String(stp)))
-    .filter(c=> !term || [c.short,c.name].some(x=> String(x||'').toLowerCase().includes(term)))
-    .sort((a,b)=> a.name.localeCompare(b.name));
-  $('catalogBody').innerHTML = list.map(c=> `<tr data-id="${c.id}"><td>${c.short}</td><td>${c.name}</td><td>${c.area||''}</td><td>${c.group||''}</td><td>${c.level||''}</td><td>${c.step||''}</td></tr>`).join('');
-}
-
-// ---------- Employee Detail ----------
-function buildEmpPicker(){ $('empSel').innerHTML = employees.map(e=>`<option value="${e.id}">${e.name}</option>`).join(''); }
-
-let openRowKey=null;
-const hiddenFileInput=document.createElement('input');
-hiddenFileInput.type='file';
-hiddenFileInput.accept='image/*';
-hiddenFileInput.multiple=true;
-hiddenFileInput.style.position='fixed';
-hiddenFileInput.style.top='-10000px';
-hiddenFileInput.style.left='-10000px';
-document.body.appendChild(hiddenFileInput);
-let pendingFileCallback=null;
-let pickFile=function(cb){
-  pendingFileCallback = cb;
-  hiddenFileInput.click();
-};
-hiddenFileInput.addEventListener('change',()=>{
-  const files = Array.from(hiddenFileInput.files||[]);
-  hiddenFileInput.value='';
-  if(pendingFileCallback){
-    pendingFileCallback(files);
-    pendingFileCallback=null;
-  }
-});
-
-const checkSvg='<svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M8.2 13.4 4.8 10l1.4-1.4 2 2 5.6-5.6 1.4 1.4-7 7z"></path></svg>';
-const chevronSvg='<svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M7.2 3.5 5.8 4.9l6.2 6.1-6.2 6.1 1.4 1.4 7.6-7.5-7.6-7.5z"></path></svg>';
-
-function computeMetaText(noteText, photoCount){
-  const hasContent = !!noteText.trim() || photoCount>0;
-  let label = hasContent ? 'Edit comment' : 'Add comment';
-  if(photoCount>0){
-    label += ` • ${photoCount} photo${photoCount>1?'s':''}`;
-  }
-  return label;
-}
-
-function renderPhotos(row, empId, classId){
-  const strip = row.querySelector('.photostrip');
-  strip.innerHTML='';
-  const list = getPhotos(empId,classId);
-  list.forEach((src,idx)=>{
-    const thumb=document.createElement('div');
-    thumb.className='thumb';
-    const img=document.createElement('img');
-    img.src=src;
-    img.alt=`Training photo ${idx+1}`;
-    const removeBtn=document.createElement('button');
-    removeBtn.type='button';
-    removeBtn.setAttribute('aria-label','Remove photo');
-    removeBtn.textContent='×';
-    removeBtn.onclick=()=>{
-      const updated = getPhotos(empId,classId);
-      updated.splice(idx,1);
-      setPhotos(empId,classId,updated);
-      renderPhotos(row,empId,classId);
-      updateMeta(row,empId,classId);
-    };
-    thumb.append(img, removeBtn);
-    strip.appendChild(thumb);
-  });
-}
-
-function updateStatusButton(row, empId, classId){
-  const statusBtn=row.querySelector('.statusbtn');
-  const done=!!(completion[empId]?.[classId]);
-  statusBtn.setAttribute('aria-pressed', done?'true':'false');
-  statusBtn.innerHTML=done?checkSvg:'';
-  statusBtn.title=done?'Mark incomplete':'Mark complete';
-}
-
-function updateMeta(row, empId, classId){
-  const meta=row.querySelector('.summary .meta');
-  const noteText=getNote(empId,classId);
-  const photoCount=getPhotos(empId,classId).length;
-  meta.textContent=computeMetaText(noteText, photoCount);
-}
-
-function commitNote(row){
-  const key=row.dataset.rowkey;
-  if(!key) return;
-  const [empId,classId]=key.split('|');
-  const textarea=row.querySelector('.note');
-  if(!textarea) return;
-  setNote(empId,classId,textarea.value);
-  updateMeta(row,empId,classId);
-}
-
-function openRow(row){
-  if(!row) return;
-  const key=row.dataset.rowkey;
-  if(openRowKey && openRowKey!==key){
-    const prev=document.querySelector(`.rowcard[data-rowkey="${openRowKey}"]`);
-    if(prev) closeRow(prev,false);
-  }
-  const details=row.querySelector('.details');
-  details.hidden=false;
-  requestAnimationFrame(()=>row.classList.add('open'));
-  row.querySelector('.summary').setAttribute('aria-expanded','true');
-  row.querySelector('.chev').setAttribute('aria-label','Collapse');
-  openRowKey=key;
-  const note=row.querySelector('.note');
-  setTimeout(()=>{
-    if(document.body.contains(row)){
-      note?.focus();
-      note?.setSelectionRange(note.value.length,note.value.length);
-    }
-  },160);
-}
-
-function closeRow(row, focusSummary=true){
-  if(!row) return;
-  commitNote(row);
-  const key=row.dataset.rowkey;
-  const details=row.querySelector('.details');
-  row.classList.remove('open');
-  row.querySelector('.summary').setAttribute('aria-expanded','false');
-  row.querySelector('.chev').setAttribute('aria-label','Expand');
-  if(openRowKey===key) openRowKey=null;
-  setTimeout(()=>{ if(!row.classList.contains('open')) details.hidden=true; },220);
-  if(focusSummary){
-    const summary=row.querySelector('.summary');
-    summary?.focus();
-  }
-}
-
-function buildRowCard(empId, cls){
-  const row=document.createElement('div');
-  row.className='rowcard';
-  row.dataset.rowkey=`${empId}|${cls.id}`;
-
-  const statusBtn=document.createElement('button');
-  statusBtn.className='statusbtn';
-  statusBtn.type='button';
-  statusBtn.setAttribute('aria-pressed','false');
-  statusBtn.title='Mark complete';
-
-  const summaryBtn=document.createElement('button');
-  summaryBtn.className='summary';
-  summaryBtn.type='button';
-  summaryBtn.setAttribute('aria-expanded','false');
-  summaryBtn.innerHTML=`<div class="title">${cls.name}</div><div class="meta">Add comment</div>`;
-
-  const chevBtn=document.createElement('button');
-  chevBtn.className='chev';
-  chevBtn.type='button';
-  chevBtn.setAttribute('aria-label','Expand');
-  chevBtn.innerHTML=chevronSvg;
-
-  const details=document.createElement('div');
-  details.className='details';
-  details.hidden=true;
-
-  const textarea=document.createElement('textarea');
-  textarea.className='note';
-  textarea.placeholder='Add comment (optional)';
-
-  const actions=document.createElement('div');
-  actions.className='actions';
-  const doneBtn=document.createElement('button');
-  doneBtn.className='done';
-  doneBtn.type='button';
-  doneBtn.textContent='Done';
-  const photoBtn=document.createElement('button');
-  photoBtn.className='photo';
-  photoBtn.type='button';
-  photoBtn.textContent='Add Photo';
-  actions.append(doneBtn, photoBtn);
-
-  const photoStrip=document.createElement('div');
-  photoStrip.className='photostrip';
-
-  details.append(textarea, actions, photoStrip);
-  row.append(statusBtn, summaryBtn, chevBtn, details);
-
-  textarea.value=getNote(empId, cls.id);
-  updateStatusButton(row, empId, cls.id);
-  updateMeta(row, empId, cls.id);
-  renderPhotos(row, empId, cls.id);
-
-  statusBtn.onclick=(ev)=>{
-    ev.preventDefault();
-    toggleCompletion(empId, cls.id);
-    updateStatusButton(row, empId, cls.id);
-  };
-
-  const toggleRow=()=>{
-    if(row.classList.contains('open')){
-      closeRow(row,false);
-    }else{
-      openRow(row);
-    }
-  };
-
-  summaryBtn.onclick=(ev)=>{ ev.preventDefault(); toggleRow(); };
-  chevBtn.onclick=(ev)=>{ ev.preventDefault(); toggleRow(); };
-
-  textarea.addEventListener('blur',()=>commitNote(row));
-  textarea.addEventListener('keydown',(ev)=>{
-    if((ev.ctrlKey||ev.metaKey) && ev.key==='Enter'){
-      ev.preventDefault();
-      commitNote(row);
-      closeRow(row);
-    }else if(ev.key==='Escape'){
-      ev.preventDefault();
-      closeRow(row);
-    }
-  });
-
-  doneBtn.onclick=()=>{ commitNote(row); closeRow(row); };
-
-  photoBtn.onclick=(ev)=>{
-    ev.preventDefault();
-    const [eId,cId]=row.dataset.rowkey.split('|');
-    pickFile(async files=>{
-      if(!files || files.length===0) return;
-      const existing=getPhotos(eId,cId);
-      for(const file of files){
-        const dataUrl=await fileToDataURL(file);
-        if(dataUrl) existing.push(dataUrl);
+      function enrichCatalog(list){
+        return list.map(item=>{
+          const id = slug(`${item.short||''}|${item.name||''}`);
+          let level = '';
+          const m = (item.group||'').match(/level\s*(\d+)/i);
+          if(m) level = `Level ${m[1]}`;
+          let step = '';
+          const p1 = (item.name||'').match(/part\s*(\d+)/i);
+          if(p1) step = p1[1];
+          if(!step){
+            const p2 = (item.short||'').match(/part\s*(\d+)/i);
+            if(p2) step = p2[1];
+          }
+          if(!step){
+            const p3 = (item.short||'').match(/(\d+)$/);
+            if(p3) step = p3[1];
+          }
+          return {...item,id,level,step};
+        });
       }
-      setPhotos(eId,cId,existing);
-      renderPhotos(row,eId,cId);
-      updateMeta(row,eId,cId);
-    });
-  };
 
-  return row;
-}
+      function uniqueSorted(arr){
+        return Array.from(new Set(arr.filter(v=>v))).sort((a,b)=>String(a).localeCompare(String(b)));
+      }
 
-async function fileToDataURL(file){
-  return new Promise(resolve=>{
-    const reader=new FileReader();
-    reader.onload=()=>resolve(reader.result);
-    reader.onerror=()=>resolve('');
-    reader.readAsDataURL(file);
-  });
-}
+      let instance = null;
 
-function renderDetail(){
-  const empId = $('empSel').value || employees[0].id; $('empSel').value = empId;
-  const cat = $('empCat').value; const grp = $('empGroup').value; const lvl = $('empLevel').value; const stp = $('empStep').value;
-  const list = fullCatalog
-    .filter(c=> (!cat || c.area===cat) && (!grp || c.group===grp) && (!lvl || c.level===lvl) && (!stp || String(c.step)===String(stp)))
-    .sort((a,b)=> a.name.localeCompare(b.name));
+      function buildSelect(labelText, id){
+        const wrapper = document.createElement('label');
+        wrapper.setAttribute('for', id);
+        wrapper.textContent = labelText+':';
+        const select = document.createElement('select');
+        select.id = id;
+        wrapper.appendChild(select);
+        return {wrapper, select};
+      }
 
-  const host=$('detailHost');
-  host.innerHTML='';
+      function buildCheckbox(labelText, id){
+        const label = document.createElement('label');
+        label.className = 'tt-checkbox';
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.id = id;
+        const box = document.createElement('span');
+        box.className = 'tt-box';
+        const text = document.createElement('span');
+        text.textContent = labelText;
+        label.append(input, box, text);
+        return {label, input};
+      }
 
-  if(list.length===0){
-    host.innerHTML='<div class="muted">No classes match the current filters.</div>';
-    openRowKey=null;
-    return;
-  }
+      function createStructure(){
+        const app = document.createElement('div');
+        app.className = 'tt-app';
 
-  const byArea = new Map();
-  list.forEach(cls=>{ const a = cls.area || 'Other'; if(!byArea.has(a)) byArea.set(a, []); byArea.get(a).push(cls); });
+        const headerPanel = document.createElement('section');
+        headerPanel.className = 'tt-panel tt-header-panel';
+        const title = document.createElement('h1');
+        title.textContent = 'Training Tracker';
+        const badge = document.createElement('span');
+        badge.id = 'tt-testBadge';
+        badge.className = 'tt-badge';
+        headerPanel.append(title, badge);
 
-  const previousOpen=openRowKey;
-  openRowKey=null;
+        const subnav = document.createElement('section');
+        subnav.className = 'tt-panel';
+        subnav.id = 'tt-subnav';
+        const pilltabs = document.createElement('div');
+        pilltabs.className = 'tt-pilltabs';
+        const tabOverview = document.createElement('button');
+        tabOverview.id = 'tt-tab-overview';
+        tabOverview.className = 'tt-pilltab';
+        tabOverview.type = 'button';
+        tabOverview.textContent = 'Manager Overview';
+        const tabEmployee = document.createElement('button');
+        tabEmployee.id = 'tt-tab-employee';
+        tabEmployee.className = 'tt-pilltab';
+        tabEmployee.type = 'button';
+        tabEmployee.textContent = 'Employee Detail';
+        const tabCatalog = document.createElement('button');
+        tabCatalog.id = 'tt-tab-catalog';
+        tabCatalog.className = 'tt-pilltab';
+        tabCatalog.type = 'button';
+        tabCatalog.textContent = 'All Classes';
+        pilltabs.append(tabOverview, tabEmployee, tabCatalog);
+        subnav.appendChild(pilltabs);
 
-  byArea.forEach((items, area)=>{
-    const block=document.createElement('div');
-    block.className='area-block';
-    block.innerHTML=`<h3 class="area-title">${area}</h3>`;
-    const rows=document.createElement('div');
-    rows.className='area-rows';
-    items.forEach(cls=>{
-      const row=buildRowCard(empId, cls);
-      rows.appendChild(row);
-    });
-    block.appendChild(rows);
-    host.appendChild(block);
-  });
+        const overview = document.createElement('section');
+        overview.id = 'tt-screen-overview';
+        overview.className = 'tt-panel';
+        const overviewHeading = document.createElement('h2');
+        overviewHeading.textContent = 'Manager Overview';
+        const overviewFilters = document.createElement('div');
+        overviewFilters.className = 'tt-row';
+        const classFilter = buildSelect('Class', 'tt-classFilter');
+        const catFilter = buildSelect('Category', 'tt-catFilter');
+        const groupFilter = buildSelect('Group', 'tt-groupFilter');
+        const levelFilter = buildSelect('Level', 'tt-levelFilter');
+        const stepFilter = buildSelect('Step', 'tt-stepFilter');
+        const overviewHint = document.createElement('span');
+        overviewHint.className = 'tt-muted';
+        overviewHint.textContent = 'Click a row to open that employee.';
+        overviewFilters.append(classFilter.wrapper, catFilter.wrapper, groupFilter.wrapper, levelFilter.wrapper, stepFilter.wrapper, overviewHint);
+        const grid = document.createElement('div');
+        grid.className = 'tt-grid';
+        const overviewTable = document.createElement('table');
+        overviewTable.id = 'tt-overviewTbl';
+        overviewTable.setAttribute('role','table');
+        const overviewHead = document.createElement('thead');
+        overviewHead.id = 'tt-overviewHead';
+        const overviewBody = document.createElement('tbody');
+        overviewBody.id = 'tt-overviewBody';
+        overviewTable.append(overviewHead, overviewBody);
+        grid.appendChild(overviewTable);
+        const overviewEmpty = document.createElement('div');
+        overviewEmpty.id = 'tt-overviewEmpty';
+        overviewEmpty.className = 'tt-empty tt-hidden';
+        overviewEmpty.textContent = 'No classes match the current filters.';
+        overview.append(overviewHeading, overviewFilters, grid, overviewEmpty);
 
-  if(previousOpen){
-    const reopen = host.querySelector(`.rowcard[data-rowkey="${previousOpen}"]`);
-    if(reopen) openRow(reopen);
-  }
-}
+        const employee = document.createElement('section');
+        employee.id = 'tt-screen-employee';
+        employee.className = 'tt-panel tt-hidden';
+        const employeeHeading = document.createElement('h2');
+        employeeHeading.textContent = 'Employee Detail';
+        const empFilters = document.createElement('div');
+        empFilters.className = 'tt-row';
+        const empSel = buildSelect('Employee', 'tt-empSel');
+        const empCat = buildSelect('Category', 'tt-empCat');
+        const empGroup = buildSelect('Group', 'tt-empGroup');
+        const empLevel = buildSelect('Level', 'tt-empLevel');
+        const empStep = buildSelect('Step', 'tt-empStep');
+        empFilters.append(empSel.wrapper, empCat.wrapper, empGroup.wrapper, empLevel.wrapper, empStep.wrapper);
+        const detailHost = document.createElement('div');
+        detailHost.id = 'tt-detailHost';
+        detailHost.style.marginTop = '8px';
+        const sigRow = document.createElement('div');
+        sigRow.className = 'tt-row tt-sig-row';
+        const empAck = buildCheckbox('Employee Acknowledgement', 'tt-empAck');
+        const mgrAck = buildCheckbox('Manager Sign-off', 'tt-mgrAck');
+        const spacer = document.createElement('span');
+        spacer.className = 'tt-spacer';
+        const empSigLabel = document.createElement('span'); empSigLabel.textContent = 'Employee:';
+        const empLine = document.createElement('input'); empLine.type = 'text'; empLine.className = 'tt-sigline'; empLine.id = 'tt-empLine';
+        const buddyLabel = document.createElement('span'); buddyLabel.textContent = 'Buddy:';
+        const buddyLine = document.createElement('input'); buddyLine.type = 'text'; buddyLine.className = 'tt-sigline'; buddyLine.id = 'tt-buddyLine';
+        sigRow.append(empAck.label, mgrAck.label, spacer, empSigLabel, empLine, buddyLabel, buddyLine);
+        employee.append(employeeHeading, empFilters, detailHost, sigRow);
 
-// ---------- Self-tests ----------
-async function runTests(){
-  const out = [];
-  const wait = (ms)=>new Promise(res=>setTimeout(res,ms));
-  try { buildFacetOptions(); out.push('T1 facets ok'); } catch(e){ out.push('T1 fail '+e.message); }
-  try { buildOverview(); out.push('T2 overview ok'); } catch(e){ out.push('T2 fail '+e.message); }
-  try {
-    buildEmpPicker();
-    renderDetail();
-    const has = document.querySelectorAll('#detailHost .rowcard').length >= 1;
-    if(!has) throw new Error('no detail items');
-    out.push('T3 detail ok');
-  } catch(e){ out.push('T3 fail '+e.message); }
-  try {
-    const firstRow = document.querySelector('#detailHost .rowcard');
-    if(!firstRow) throw new Error('no row');
-    const statusBtn = firstRow.querySelector('.statusbtn');
-    const [empId,classId] = firstRow.dataset.rowkey.split('|');
-    const before = !!(completion[empId]?.[classId]);
-    statusBtn.click();
-    const after = !!(completion[empId]?.[classId]);
-    if(before===after) throw new Error('toggle failed');
-    statusBtn.click();
-    out.push('T4 toggle ok');
-  } catch(e){ out.push('T4 fail '+e.message); }
-  try {
-    const firstRow = document.querySelector('#detailHost .rowcard');
-    if(!firstRow) throw new Error('no row');
-    const summary = firstRow.querySelector('.summary');
-    const textarea = firstRow.querySelector('.note');
-    const [empId,classId] = firstRow.dataset.rowkey.split('|');
-    summary.click();
-    await wait(240);
-    if(!firstRow.classList.contains('open')) throw new Error('open failed');
-    if(textarea!==document.activeElement) throw new Error('textarea not focused');
-    textarea.value='Test note';
-    const escEvent = new KeyboardEvent('keydown',{key:'Escape'});
-    textarea.dispatchEvent(escEvent);
-    await wait(40);
-    if(firstRow.classList.contains('open')) throw new Error('close failed');
-    if((getNote(empId,classId)||'')!=='Test note') throw new Error('note not saved');
-    setNote(empId,classId,'');
-    updateMeta(firstRow,empId,classId);
-    out.push('T5 expand ok');
-  } catch(e){ out.push('T5 fail '+e.message); }
-  try {
-    const firstRow = document.querySelector('#detailHost .rowcard');
-    if(!firstRow) throw new Error('no row');
-    const photoBtn = firstRow.querySelector('.photo');
-    const [empId,classId] = firstRow.dataset.rowkey.split('|');
-    const originalPick = pickFile;
-    const originalFileToDataURL = fileToDataURL;
-    try{
-      pickFile = (cb)=>{ cb([{name:'mock'}]); };
-      fileToDataURL = ()=> 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AApEBgUo35N8AAAAASUVORK5CYII=';
-      photoBtn.click();
-      const thumbCount = firstRow.querySelectorAll('.photostrip .thumb').length;
-      if(thumbCount<1) throw new Error('photo not added');
-      setPhotos(empId,classId,[]);
-      renderPhotos(firstRow,empId,classId);
-    } finally {
-      pickFile = originalPick;
-      fileToDataURL = originalFileToDataURL;
-    }
-    out.push('T6 photo ok');
-  } catch(e){ out.push('T6 fail '+e.message); }
-  try { buildCatalog(); const rows = document.querySelectorAll('#catalogBody tr').length; if(rows<1) throw new Error('catalog empty'); out.push('T7 catalog ok'); } catch(e){ out.push('T7 fail '+e.message); }
-  const pass = out.every(t=>/ ok$/.test(t));
-  const badge = $('testBadge'); if(badge) badge.textContent = pass? 'Self-tests: ✓' : 'Self-tests: ⚠';
-  console.log('[Training Tracker tests]', out.join(' | '));
-}
+        const catalog = document.createElement('section');
+        catalog.id = 'tt-screen-catalog';
+        catalog.className = 'tt-panel tt-hidden';
+        const catalogHeading = document.createElement('h2');
+        catalogHeading.textContent = 'All Classes';
+        const catalogFilters = document.createElement('div');
+        catalogFilters.className = 'tt-row';
+        const searchWrap = document.createElement('label');
+        searchWrap.textContent = 'Search:';
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.id = 'tt-catalogSearch';
+        searchInput.placeholder = 'Type to filter by name or short id';
+        searchWrap.appendChild(searchInput);
+        const catalogCat = buildSelect('Category', 'tt-catalogCat');
+        const catalogGroup = buildSelect('Group', 'tt-catalogGroup');
+        const catalogLevel = buildSelect('Level', 'tt-catalogLevel');
+        const catalogStep = buildSelect('Step', 'tt-catalogStep');
+        catalogFilters.append(searchWrap, catalogCat.wrapper, catalogGroup.wrapper, catalogLevel.wrapper, catalogStep.wrapper);
+        const catalogGrid = document.createElement('div');
+        catalogGrid.className = 'tt-grid';
+        const catalogTable = document.createElement('table');
+        const catalogHead = document.createElement('thead');
+        catalogHead.innerHTML = '<tr><th>Short</th><th>Name</th><th>Category</th><th>Group</th><th>Level</th><th>Step</th></tr>';
+        const catalogBody = document.createElement('tbody');
+        catalogBody.id = 'tt-catalogBody';
+        catalogTable.append(catalogHead, catalogBody);
+        catalogGrid.appendChild(catalogTable);
+        catalog.append(catalogHeading, catalogFilters, catalogGrid);
 
-// ---------- Init ----------
-function init(){
-  tabOverview.onclick=()=>setTab('overview');
-  tabEmployee.onclick=()=>setTab('employee');
-  tabCatalog.onclick=()=>setTab('catalog');
+        app.append(headerPanel, subnav, overview, employee, catalog);
 
-  buildEmpPicker();
-  buildFacetOptions();
+        return {
+          app,
+          headerPanel,
+          badge,
+          tabOverview,
+          tabEmployee,
+          tabCatalog,
+          overviewSection: overview,
+          overviewTable,
+          overviewHead,
+          overviewBody,
+          overviewEmpty,
+          classFilter: classFilter.select,
+          catFilter: catFilter.select,
+          groupFilter: groupFilter.select,
+          levelFilter: levelFilter.select,
+          stepFilter: stepFilter.select,
+          employeeSection: employee,
+          empFilters: {
+            empSel: empSel.select,
+            empCat: empCat.select,
+            empGroup: empGroup.select,
+            empLevel: empLevel.select,
+            empStep: empStep.select
+          },
+          detailHost,
+          empAck: empAck.input,
+          mgrAck: mgrAck.input,
+          empLine,
+          buddyLine,
+          catalogSection: catalog,
+          catalogBody,
+          catalogFilters: {
+            search: searchInput,
+            cat: catalogCat.select,
+            group: catalogGroup.select,
+            level: catalogLevel.select,
+            step: catalogStep.select
+          }
+        };
+      }
+      function ensureBucket(store, key){
+        if(!store[key]) store[key] = {};
+        return store[key];
+      }
 
-  // Wire filters
-  $('classFilter').onchange = buildOverview;
-  $('catFilter').onchange = ()=>{ $('classFilter').value=''; buildOverview(); };
-  $('groupFilter').onchange = ()=>{ $('classFilter').value=''; buildOverview(); };
-  $('levelFilter').onchange = ()=>{ $('classFilter').value=''; buildOverview(); };
-  $('stepFilter').onchange = ()=>{ $('classFilter').value=''; buildOverview(); };
+      function createInstance(rootElement, options={}){
+        if(!rootElement) throw new Error('TrainingTracker.mount requires a root element');
+        const elements = createStructure();
+        rootElement.appendChild(elements.app);
 
-  $('catalogSearch').oninput = buildCatalog;
-  $('catalogCat').onchange = buildCatalog;
-  $('catalogGroup').onchange = buildCatalog;
-  $('catalogLevel').onchange = buildCatalog;
-  $('catalogStep').onchange = buildCatalog;
+        const listeners = [];
+        const addListener = (target, type, handler)=>{
+          target.addEventListener(type, handler);
+          listeners.push({target, type, handler});
+        };
 
-  $('empCat').onchange = renderDetail;
-  $('empGroup').onchange = renderDetail;
-  $('empLevel').onchange = renderDetail;
-  $('empStep').onchange = renderDetail;
+        const state = {
+          employees: [],
+          classes: [],
+          catalog: [],
+          completion: {},
+          notes: {},
+          photos: {}
+        };
+        let openRowKey = null;
+        let activeTab = 'overview';
+        const onChange = typeof options.onChange === 'function' ? options.onChange : null;
+        const hiddenFileInput = document.createElement('input');
+        hiddenFileInput.type = 'file';
+        hiddenFileInput.accept = 'image/*';
+        hiddenFileInput.multiple = true;
+        hiddenFileInput.style.position = 'absolute';
+        hiddenFileInput.style.width = '1px';
+        hiddenFileInput.style.height = '1px';
+        hiddenFileInput.style.opacity = '0';
+        elements.app.appendChild(hiddenFileInput);
+        let pendingFileCallback = null;
 
-  setTab('overview');
-  runTests();
-}
-init();
-</script>
+        const usePersistence = !options || (Object.keys(options).length === 0);
+
+        function loadData(){
+          state.employees = clone(options.employees || defaultEmployees);
+          state.classes = clone(options.classes || defaultClasses);
+          state.catalog = enrichCatalog(state.classes);
+          state.completion = clone(options.completions || {});
+          if(usePersistence && typeof localStorage !== 'undefined'){
+            try{
+              const raw = localStorage.getItem(STORAGE_KEY);
+              if(raw){
+                const parsed = JSON.parse(raw);
+                if(parsed.completion) state.completion = parsed.completion;
+                if(parsed.notes) state.notes = parsed.notes;
+                if(parsed.photos) state.photos = parsed.photos;
+              }
+            }catch(err){
+              console.warn('TrainingTracker: failed to load saved state', err);
+            }
+          }
+        }
+
+        function saveState(){
+          if(!usePersistence || typeof localStorage === 'undefined') return;
+          try{
+            const payload = JSON.stringify({
+              completion: state.completion,
+              notes: state.notes,
+              photos: state.photos
+            });
+            localStorage.setItem(STORAGE_KEY, payload);
+          }catch(err){
+            console.warn('TrainingTracker: failed to persist state', err);
+          }
+        }
+
+        function getNote(empId, classId){
+          return state.notes[empId]?.[classId] || '';
+        }
+        function setNote(empId, classId, value){
+          const trimmed = value.trim();
+          if(trimmed){
+            ensureBucket(state.notes, empId)[classId] = value;
+          }else if(state.notes[empId]){
+            delete state.notes[empId][classId];
+            if(Object.keys(state.notes[empId]).length === 0) delete state.notes[empId];
+          }
+          saveState();
+        }
+        function getPhotos(empId, classId){
+          return state.photos[empId]?.[classId] ? [...state.photos[empId][classId]] : [];
+        }
+        function setPhotos(empId, classId, list){
+          if(list.length){
+            ensureBucket(state.photos, empId)[classId] = list;
+          }else if(state.photos[empId]){
+            delete state.photos[empId][classId];
+            if(Object.keys(state.photos[empId]).length === 0) delete state.photos[empId];
+          }
+          saveState();
+        }
+
+        function setCompletion(empId, classId, value){
+          ensureBucket(state.completion, empId)[classId] = value;
+          saveState();
+          if(onChange){
+            try{ onChange({employeeId: empId, classId, done: !!value}); }
+            catch(err){ console.error('TrainingTracker onChange error', err); }
+          }
+        }
+
+        function toggleCompletion(empId, classId){
+          const current = !!(state.completion[empId]?.[classId]);
+          setCompletion(empId, classId, !current);
+          buildOverview();
+        }
+
+        let pickFile = (callback)=>{
+          pendingFileCallback = callback;
+          hiddenFileInput.value = '';
+          hiddenFileInput.click();
+        };
+
+        hiddenFileInput.addEventListener('change', ()=>{
+          const files = Array.from(hiddenFileInput.files || []);
+          hiddenFileInput.value = '';
+          if(pendingFileCallback){
+            pendingFileCallback(files);
+            pendingFileCallback = null;
+          }
+        });
+
+        function clearSelect(select){
+          while(select.firstChild) select.removeChild(select.firstChild);
+        }
+
+        function setSelectOptions(select, optionsList, includeAll=true){
+          clearSelect(select);
+          if(includeAll){
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = 'All';
+            select.appendChild(opt);
+          }
+          optionsList.forEach(value=>{
+            const opt = document.createElement('option');
+            opt.value = value;
+            opt.textContent = value;
+            select.appendChild(opt);
+          });
+        }
+
+        function buildFacetOptions(){
+          const cats = uniqueSorted(state.catalog.map(c=>c.area||''));
+          const groups = uniqueSorted(state.catalog.map(c=>c.group||''));
+          const levels = uniqueSorted(state.catalog.map(c=>c.level||''));
+          const steps = uniqueSorted(state.catalog.map(c=>c.step||''));
+
+          clearSelect(elements.classFilter);
+          const allOption = document.createElement('option');
+          allOption.value = '';
+          allOption.textContent = 'All';
+          elements.classFilter.appendChild(allOption);
+          state.catalog.forEach(cls=>{
+            const opt = document.createElement('option');
+            opt.value = cls.id;
+            opt.textContent = cls.short;
+            opt.title = cls.name;
+            elements.classFilter.appendChild(opt);
+          });
+
+          setSelectOptions(elements.catFilter, cats, true);
+          setSelectOptions(elements.groupFilter, groups, true);
+          setSelectOptions(elements.levelFilter, levels, true);
+          setSelectOptions(elements.stepFilter, steps, true);
+
+          const empFilters = elements.empFilters;
+          setSelectOptions(empFilters.empCat, cats, true);
+          setSelectOptions(empFilters.empGroup, groups, true);
+          setSelectOptions(empFilters.empLevel, levels, true);
+          setSelectOptions(empFilters.empStep, steps, true);
+
+          const catalogFilters = elements.catalogFilters;
+          setSelectOptions(catalogFilters.cat, cats, true);
+          setSelectOptions(catalogFilters.group, groups, true);
+          setSelectOptions(catalogFilters.level, levels, true);
+          setSelectOptions(catalogFilters.step, steps, true);
+        }
+
+        function buildEmpPicker(){
+          const select = elements.empFilters.empSel;
+          clearSelect(select);
+          state.employees.forEach(emp=>{
+            const opt = document.createElement('option');
+            opt.value = emp.id;
+            opt.textContent = emp.name;
+            select.appendChild(opt);
+          });
+        }
+
+        function markCell(value){
+          const span = document.createElement('span');
+          span.className = value ? 'tt-status-ok' : 'tt-status-miss';
+          span.textContent = value ? '✓' : '✗';
+          return span;
+        }
+
+        function computeProgress(empId){
+          const total = state.catalog.length || 1;
+          const completed = Object.values(state.completion[empId] || {}).filter(Boolean).length;
+          return Math.round((completed/total)*100);
+        }
+
+        function setOverviewEmpty(message){
+          elements.overviewEmpty.textContent = message;
+          elements.overviewEmpty.classList.remove('tt-hidden');
+          elements.overviewTable.classList.add('tt-hidden');
+        }
+
+        function hideOverviewEmpty(){
+          elements.overviewEmpty.classList.add('tt-hidden');
+          elements.overviewTable.classList.remove('tt-hidden');
+        }
+
+        function buildOverview(){
+          const head = elements.overviewHead;
+          const body = elements.overviewBody;
+          head.textContent = '';
+          body.textContent = '';
+
+          const selectedClassId = elements.classFilter.value;
+          const cat = elements.catFilter.value;
+          const group = elements.groupFilter.value;
+          const level = elements.levelFilter.value;
+          const step = elements.stepFilter.value;
+
+          const filtered = state.catalog.filter(c=>
+            (!cat || c.area===cat) &&
+            (!group || c.group===group) &&
+            (!level || c.level===level) &&
+            (!step || String(c.step)===String(step))
+          );
+
+          if(selectedClassId){
+            const cls = state.catalog.find(c=>c.id===selectedClassId);
+            if(!cls){
+              setOverviewEmpty('No classes match the current filters.');
+              return;
+            }
+            hideOverviewEmpty();
+            const headRow = document.createElement('tr');
+            const thEmp = document.createElement('th');
+            thEmp.scope = 'col';
+            thEmp.className = 'tt-emp-col';
+            thEmp.textContent = 'Employee';
+            const thCls = document.createElement('th');
+            thCls.scope = 'col';
+            thCls.className = 'tt-cls-col';
+            thCls.textContent = cls.short;
+            thCls.title = cls.name;
+            const thProg = document.createElement('th');
+            thProg.scope = 'col';
+            thProg.className = 'tt-prog-col';
+            thProg.textContent = 'Progress';
+            headRow.append(thEmp, thCls, thProg);
+            head.appendChild(headRow);
+
+            const frag = document.createDocumentFragment();
+            state.employees.forEach(emp=>{
+              const tr = document.createElement('tr');
+              tr.dataset.empId = emp.id;
+              tr.tabIndex = 0;
+              const nameCell = document.createElement('th');
+              nameCell.scope = 'row';
+              nameCell.className = 'tt-emp-col';
+              nameCell.textContent = emp.name;
+              const statusCell = document.createElement('td');
+              statusCell.className = 'tt-cls-col';
+              const done = !!(state.completion[emp.id]?.[cls.id]);
+              statusCell.appendChild(markCell(done));
+              const progressCell = buildProgressCell(emp.id);
+              tr.append(nameCell, statusCell, progressCell);
+              attachRowInteraction(tr, emp.id);
+              frag.appendChild(tr);
+            });
+            body.appendChild(frag);
+            return;
+          }
+
+          if(filtered.length === 0){
+            setOverviewEmpty('No classes match the current filters.');
+            return;
+          }
+          hideOverviewEmpty();
+
+          const headRow = document.createElement('tr');
+          const thEmp = document.createElement('th');
+          thEmp.scope = 'col';
+          thEmp.className = 'tt-emp-col';
+          thEmp.textContent = 'Employee';
+          headRow.appendChild(thEmp);
+          filtered.forEach(cls=>{
+            const th = document.createElement('th');
+            th.scope = 'col';
+            th.className = 'tt-cls-col';
+            th.textContent = cls.short;
+            th.title = `${cls.name}${cls.area ? ' — '+cls.area : ''}${cls.level ? ' • '+cls.level : ''}${cls.step ? ' • Step '+cls.step : ''}`;
+            headRow.appendChild(th);
+          });
+          const thProg = document.createElement('th');
+          thProg.scope = 'col';
+          thProg.className = 'tt-prog-col';
+          thProg.textContent = 'Progress';
+          headRow.appendChild(thProg);
+          head.appendChild(headRow);
+
+          const frag = document.createDocumentFragment();
+          state.employees.forEach(emp=>{
+            const tr = document.createElement('tr');
+            tr.dataset.empId = emp.id;
+            tr.tabIndex = 0;
+            const nameCell = document.createElement('th');
+            nameCell.scope = 'row';
+            nameCell.className = 'tt-emp-col';
+            nameCell.textContent = emp.name;
+            tr.appendChild(nameCell);
+            filtered.forEach(cls=>{
+              const td = document.createElement('td');
+              td.className = 'tt-cls-col';
+              const done = !!(state.completion[emp.id]?.[cls.id]);
+              td.appendChild(markCell(done));
+              tr.appendChild(td);
+            });
+            tr.appendChild(buildProgressCell(emp.id));
+            attachRowInteraction(tr, emp.id);
+            frag.appendChild(tr);
+          });
+          body.appendChild(frag);
+        }
+
+        function buildProgressCell(empId){
+          const pct = computeProgress(empId);
+          const td = document.createElement('td');
+          td.className = 'tt-prog-col';
+          const bar = document.createElement('div');
+          bar.className = 'tt-progress';
+          const span = document.createElement('span');
+          span.style.width = `${pct}%`;
+          bar.appendChild(span);
+          const text = document.createElement('div');
+          text.textContent = `${pct}%`;
+          td.append(bar, text);
+          return td;
+        }
+
+        function attachRowInteraction(row, empId){
+          const activate = ()=>{
+            elements.empFilters.empSel.value = empId;
+            setTab('employee');
+          };
+          row.addEventListener('click', activate);
+          row.addEventListener('keydown', ev=>{
+            if(ev.key === 'Enter' || ev.key === ' '){
+              ev.preventDefault();
+              activate();
+            }
+          });
+        }
+
+        function setTab(which){
+          activeTab = which;
+          const panels = {
+            overview: elements.overviewSection,
+            employee: elements.employeeSection,
+            catalog: elements.catalogSection
+          };
+          Object.values(panels).forEach(p=>p.classList.add('tt-hidden'));
+          if(panels[which]) panels[which].classList.remove('tt-hidden');
+          elements.tabOverview.removeAttribute('aria-current');
+          elements.tabEmployee.removeAttribute('aria-current');
+          elements.tabCatalog.removeAttribute('aria-current');
+          if(which === 'overview') elements.tabOverview.setAttribute('aria-current','page');
+          if(which === 'employee') elements.tabEmployee.setAttribute('aria-current','page');
+          if(which === 'catalog') elements.tabCatalog.setAttribute('aria-current','page');
+          if(which === 'overview') buildOverview();
+          if(which === 'employee') renderDetail();
+          if(which === 'catalog') buildCatalog();
+        }
+
+        function computeMetaText(noteText, photoCount){
+          const hasContent = !!noteText.trim() || photoCount > 0;
+          let label = hasContent ? 'Edit comment' : 'Add comment';
+          if(photoCount > 0){
+            label += ` • ${photoCount} photo${photoCount>1?'s':''}`;
+          }
+          return label;
+        }
+
+        function updateStatusButton(row, empId, classId){
+          const btn = row.querySelector('.tt-statusbtn');
+          const done = !!(state.completion[empId]?.[classId]);
+          btn.setAttribute('aria-pressed', done ? 'true' : 'false');
+          btn.innerHTML = done ? checkSvg : '';
+          btn.title = done ? 'Mark incomplete' : 'Mark complete';
+        }
+
+        function updateMeta(row, empId, classId){
+          const meta = row.querySelector('.tt-summary .tt-meta');
+          const note = getNote(empId, classId);
+          const photoCount = getPhotos(empId, classId).length;
+          meta.textContent = computeMetaText(note, photoCount);
+        }
+
+        function renderPhotos(row, empId, classId){
+          const strip = row.querySelector('.tt-photostrip');
+          strip.textContent = '';
+          const list = getPhotos(empId, classId);
+          list.forEach((src, idx)=>{
+            const thumb = document.createElement('div');
+            thumb.className = 'tt-thumb';
+            const img = document.createElement('img');
+            img.src = src;
+            img.alt = `Training photo ${idx+1}`;
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.setAttribute('aria-label', 'Remove photo');
+            removeBtn.textContent = '×';
+            removeBtn.addEventListener('click', ()=>{
+              const current = getPhotos(empId, classId);
+              current.splice(idx,1);
+              setPhotos(empId, classId, current);
+              renderPhotos(row, empId, classId);
+              updateMeta(row, empId, classId);
+            });
+            thumb.append(img, removeBtn);
+            strip.appendChild(thumb);
+          });
+        }
+
+        function commitNote(row){
+          const textarea = row.querySelector('.tt-note');
+          const [empId, classId] = row.dataset.rowkey.split('|');
+          setNote(empId, classId, textarea.value);
+          updateMeta(row, empId, classId);
+        }
+
+        function closeOpenRow(){
+          if(!openRowKey) return;
+          const row = elements.detailHost.querySelector(`.tt-rowcard[data-rowkey="${openRowKey}"]`);
+          if(row) closeRow(row, true);
+        }
+
+        function openRow(row){
+          closeOpenRow();
+          row.classList.add('tt-open');
+          const details = row.querySelector('.tt-details');
+          details.hidden = false;
+          openRowKey = row.dataset.rowkey;
+          const summary = row.querySelector('.tt-summary');
+          if(summary) summary.setAttribute('aria-expanded','true');
+          const textarea = row.querySelector('.tt-note');
+          requestAnimationFrame(()=>textarea.focus());
+        }
+
+        function closeRow(row, keepFocus=false){
+          commitNote(row);
+          row.classList.remove('tt-open');
+          const details = row.querySelector('.tt-details');
+          details.hidden = true;
+          if(openRowKey === row.dataset.rowkey) openRowKey = null;
+          const summary = row.querySelector('.tt-summary');
+          if(summary) summary.setAttribute('aria-expanded','false');
+          if(!keepFocus && summary){
+            summary.focus();
+          }
+        }
+
+        function buildRowCard(empId, cls){
+          const row = document.createElement('div');
+          row.className = 'tt-rowcard';
+          row.dataset.rowkey = `${empId}|${cls.id}`;
+
+          const statusBtn = document.createElement('button');
+          statusBtn.className = 'tt-statusbtn';
+          statusBtn.type = 'button';
+          statusBtn.setAttribute('aria-pressed','false');
+          statusBtn.title = 'Mark complete';
+
+          const summaryBtn = document.createElement('button');
+          summaryBtn.className = 'tt-summary';
+          summaryBtn.type = 'button';
+          summaryBtn.setAttribute('aria-expanded','false');
+          const title = document.createElement('div');
+          title.className = 'tt-title';
+          title.textContent = cls.name;
+          const meta = document.createElement('div');
+          meta.className = 'tt-meta';
+          meta.textContent = 'Add comment';
+          summaryBtn.append(title, meta);
+
+          const chevBtn = document.createElement('button');
+          chevBtn.className = 'tt-chev';
+          chevBtn.type = 'button';
+          chevBtn.setAttribute('aria-label','Expand');
+          chevBtn.innerHTML = chevronSvg;
+
+          const details = document.createElement('div');
+          details.className = 'tt-details';
+          details.hidden = true;
+          const textarea = document.createElement('textarea');
+          textarea.className = 'tt-note';
+          textarea.placeholder = 'Add comment (optional)';
+          const actions = document.createElement('div');
+          actions.className = 'tt-actions';
+          const doneBtn = document.createElement('button');
+          doneBtn.className = 'tt-done';
+          doneBtn.type = 'button';
+          doneBtn.textContent = 'Done';
+          const photoBtn = document.createElement('button');
+          photoBtn.className = 'tt-photo';
+          photoBtn.type = 'button';
+          photoBtn.textContent = 'Add Photo';
+          actions.append(doneBtn, photoBtn);
+          const photoStrip = document.createElement('div');
+          photoStrip.className = 'tt-photostrip';
+          details.append(textarea, actions, photoStrip);
+
+          row.append(statusBtn, summaryBtn, chevBtn, details);
+
+          textarea.value = getNote(empId, cls.id);
+          updateStatusButton(row, empId, cls.id);
+          updateMeta(row, empId, cls.id);
+          renderPhotos(row, empId, cls.id);
+
+          statusBtn.addEventListener('click', ev=>{
+            ev.preventDefault();
+            toggleCompletion(empId, cls.id);
+            updateStatusButton(row, empId, cls.id);
+            updateMeta(row, empId, cls.id);
+          });
+
+          const toggleRow = ()=>{
+            const isOpen = row.classList.contains('tt-open');
+            if(isOpen){
+              closeRow(row);
+            }else{
+              openRow(row);
+            }
+            summaryBtn.setAttribute('aria-expanded', row.classList.contains('tt-open') ? 'true' : 'false');
+          };
+
+          summaryBtn.addEventListener('click', ev=>{ ev.preventDefault(); toggleRow(); });
+          chevBtn.addEventListener('click', ev=>{ ev.preventDefault(); toggleRow(); });
+
+          textarea.addEventListener('blur', ()=>commitNote(row));
+          textarea.addEventListener('keydown', ev=>{
+            if((ev.ctrlKey || ev.metaKey) && ev.key === 'Enter'){
+              ev.preventDefault();
+              commitNote(row);
+              closeRow(row);
+            }else if(ev.key === 'Escape'){
+              ev.preventDefault();
+              closeRow(row, true);
+            }
+          });
+
+          doneBtn.addEventListener('click', ()=>{ commitNote(row); closeRow(row); });
+
+          photoBtn.addEventListener('click', ev=>{
+            ev.preventDefault();
+            pickFile(async files=>{
+              if(!files || files.length === 0) return;
+              const existing = getPhotos(empId, cls.id);
+              for(const file of files){
+                const dataUrl = await fileToDataURL(file);
+                if(dataUrl) existing.push(dataUrl);
+              }
+              setPhotos(empId, cls.id, existing);
+              renderPhotos(row, empId, cls.id);
+              updateMeta(row, empId, cls.id);
+            });
+          });
+
+          return row;
+        }
+
+        let fileToDataURL = (file)=>{
+          return new Promise(resolve=>{
+            const reader = new FileReader();
+            reader.onload = ()=>resolve(reader.result);
+            reader.onerror = ()=>resolve('');
+            reader.readAsDataURL(file);
+          });
+        };
+
+        function renderDetail(){
+          const empId = elements.empFilters.empSel.value || state.employees[0]?.id;
+          if(!empId) return;
+          elements.empFilters.empSel.value = empId;
+          const cat = elements.empFilters.empCat.value;
+          const group = elements.empFilters.empGroup.value;
+          const level = elements.empFilters.empLevel.value;
+          const step = elements.empFilters.empStep.value;
+          const list = state.catalog
+            .filter(c=> (!cat || c.area===cat) && (!group || c.group===group) && (!level || c.level===level) && (!step || String(c.step)===String(step)))
+            .sort((a,b)=> a.name.localeCompare(b.name));
+
+          const host = elements.detailHost;
+          host.textContent = '';
+
+          if(list.length === 0){
+            const empty = document.createElement('div');
+            empty.className = 'tt-muted';
+            empty.textContent = 'No classes match the current filters.';
+            host.appendChild(empty);
+            openRowKey = null;
+            return;
+          }
+
+          const byArea = new Map();
+          list.forEach(cls=>{
+            const area = cls.area || 'Other';
+            if(!byArea.has(area)) byArea.set(area, []);
+            byArea.get(area).push(cls);
+          });
+
+          const previousOpen = openRowKey;
+          openRowKey = null;
+
+          byArea.forEach((items, area)=>{
+            const block = document.createElement('div');
+            block.className = 'tt-area-block';
+            const heading = document.createElement('h3');
+            heading.className = 'tt-area-title';
+            heading.textContent = area;
+            const rows = document.createElement('div');
+            rows.className = 'tt-area-rows';
+            items.forEach(cls=>{
+              const row = buildRowCard(empId, cls);
+              rows.appendChild(row);
+            });
+            block.append(heading, rows);
+            host.appendChild(block);
+          });
+
+          if(previousOpen){
+            const reopen = host.querySelector(`.tt-rowcard[data-rowkey="${previousOpen}"]`);
+            if(reopen) openRow(reopen);
+          }
+        }
+
+        function buildCatalog(){
+          const filters = elements.catalogFilters;
+          const term = filters.search.value?.toLowerCase() || '';
+          const cat = filters.cat.value;
+          const group = filters.group.value;
+          const level = filters.level.value;
+          const step = filters.step.value;
+          const list = state.catalog
+            .filter(c=> (!cat || c.area===cat) && (!group || c.group===group) && (!level || c.level===level) && (!step || String(c.step)===String(step)))
+            .filter(c=> !term || [c.short, c.name].some(x=> String(x||'').toLowerCase().includes(term)))
+            .sort((a,b)=> a.name.localeCompare(b.name));
+          elements.catalogBody.textContent = '';
+          const frag = document.createDocumentFragment();
+          list.forEach(c=>{
+            const tr = document.createElement('tr');
+            tr.dataset.id = c.id;
+            const cells = [c.short, c.name, c.area||'', c.group||'', c.level||'', c.step||''];
+            cells.forEach(text=>{
+              const td = document.createElement('td');
+              td.textContent = text;
+              tr.appendChild(td);
+            });
+            frag.appendChild(tr);
+          });
+          elements.catalogBody.appendChild(frag);
+        }
+
+        function runTests(){
+          const out = [];
+          const wait = (ms)=>new Promise(res=>setTimeout(res,ms));
+          const tests = [
+            { name:'T1 facets', fn: async ()=>{ buildFacetOptions(); } },
+            { name:'T2 overview', fn: async ()=>{ buildOverview(); } },
+            { name:'T3 detail', fn: async ()=>{
+                buildEmpPicker();
+                renderDetail();
+                const count = elements.detailHost.querySelectorAll('.tt-rowcard').length;
+                if(count < 1) throw new Error('no detail items');
+              }
+            },
+            { name:'T4 toggle', fn: async ()=>{
+                const firstRow = elements.detailHost.querySelector('.tt-rowcard');
+                if(!firstRow) throw new Error('no row');
+                const statusBtn = firstRow.querySelector('.tt-statusbtn');
+                const [empId, classId] = firstRow.dataset.rowkey.split('|');
+                const before = !!(state.completion[empId]?.[classId]);
+                statusBtn.click();
+                const after = !!(state.completion[empId]?.[classId]);
+                if(before === after) throw new Error('toggle failed');
+                statusBtn.click();
+              }
+            },
+            { name:'T5 single class', fn: async ()=>{
+                const classOptions = Array.from(elements.classFilter.options).filter(opt=>opt.value);
+                if(classOptions.length === 0) throw new Error('no class options');
+                elements.classFilter.value = classOptions[0].value;
+                buildOverview();
+                const headerCells = elements.overviewHead.querySelectorAll('tr th');
+                if(headerCells.length !== 3) throw new Error('expected 3 columns');
+                elements.classFilter.value = '';
+              }
+            },
+            { name:'T6 empty state', fn: async ()=>{
+                elements.classFilter.value = '';
+                elements.catFilter.value = 'Compliance';
+                elements.groupFilter.value = 'Level 1';
+                buildOverview();
+                if(elements.overviewEmpty.classList.contains('tt-hidden')){
+                  throw new Error('empty state missing');
+                }
+                elements.catFilter.value = '';
+                elements.groupFilter.value = '';
+              }
+            },
+            { name:'T7 row select', fn: async ()=>{
+                buildOverview();
+                const firstRow = elements.overviewBody.querySelector('tr');
+                if(!firstRow) throw new Error('no overview row');
+                const targetEmp = firstRow.dataset.empId;
+                firstRow.click();
+                await wait(10);
+                if(elements.empFilters.empSel.value !== targetEmp) throw new Error('employee not selected');
+                setTab('overview');
+              }
+            },
+            { name:'T8 expand', fn: async ()=>{
+                setTab('employee');
+                const firstRow = elements.detailHost.querySelector('.tt-rowcard');
+                if(!firstRow) throw new Error('no row');
+                const summary = firstRow.querySelector('.tt-summary');
+                const textarea = firstRow.querySelector('.tt-note');
+                const [empId, classId] = firstRow.dataset.rowkey.split('|');
+                summary.click();
+                await wait(240);
+                if(!firstRow.classList.contains('tt-open')) throw new Error('open failed');
+                if(document.activeElement !== textarea) throw new Error('textarea not focused');
+                textarea.value = 'Test note';
+                const escEvent = new KeyboardEvent('keydown',{key:'Escape'});
+                textarea.dispatchEvent(escEvent);
+                await wait(40);
+                if(firstRow.classList.contains('tt-open')) throw new Error('close failed');
+                if((getNote(empId,classId)||'') !== 'Test note') throw new Error('note not saved');
+                setNote(empId,classId,'');
+                updateMeta(firstRow,empId,classId);
+              }
+            },
+            { name:'T9 photo', fn: async ()=>{
+                const firstRow = elements.detailHost.querySelector('.tt-rowcard');
+                if(!firstRow) throw new Error('no row');
+                const photoBtn = firstRow.querySelector('.tt-photo');
+                const [empId, classId] = firstRow.dataset.rowkey.split('|');
+                const originalPick = pickFile;
+                const originalFileToDataURL = fileToDataURL;
+                try{
+                  pickFile = (cb)=>cb([{name:'mock'}]);
+                  fileToDataURL = async ()=> 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AApEBgUo35N8AAAAASUVORK5CYII=';
+                  photoBtn.click();
+                  const count = firstRow.querySelectorAll('.tt-photostrip .tt-thumb').length;
+                  if(count < 1) throw new Error('photo not added');
+                  setPhotos(empId, classId, []);
+                  renderPhotos(firstRow, empId, classId);
+                }finally{
+                  pickFile = originalPick;
+                  fileToDataURL = originalFileToDataURL;
+                }
+              }
+            },
+            { name:'T10 catalog', fn: async ()=>{
+                buildCatalog();
+                const rows = elements.catalogBody.querySelectorAll('tr').length;
+                if(rows < 1) throw new Error('catalog empty');
+              }
+            }
+          ];
+
+          (async()=>{
+            for(const test of tests){
+              try{
+                await test.fn();
+                out.push(`${test.name} ok`);
+              }catch(err){
+                out.push(`${test.name} fail ${err.message}`);
+              }
+            }
+            const pass = out.every(item=>/ ok$/.test(item));
+            if(elements.badge){
+              elements.badge.textContent = pass ? 'Self-tests: ✓' : 'Self-tests: ⚠';
+            }
+            console.log('[Training Tracker tests]', out.join(' | '));
+          })();
+        }
+
+        function wireEvents(){
+          addListener(elements.tabOverview, 'click', ()=>setTab('overview'));
+          addListener(elements.tabEmployee, 'click', ()=>setTab('employee'));
+          addListener(elements.tabCatalog, 'click', ()=>setTab('catalog'));
+
+          addListener(elements.classFilter, 'change', ()=>buildOverview());
+          addListener(elements.catFilter, 'change', ()=>{ elements.classFilter.value=''; buildOverview(); });
+          addListener(elements.groupFilter, 'change', ()=>{ elements.classFilter.value=''; buildOverview(); });
+          addListener(elements.levelFilter, 'change', ()=>{ elements.classFilter.value=''; buildOverview(); });
+          addListener(elements.stepFilter, 'change', ()=>{ elements.classFilter.value=''; buildOverview(); });
+
+          addListener(elements.catalogFilters.search, 'input', ()=>buildCatalog());
+          addListener(elements.catalogFilters.cat, 'change', ()=>buildCatalog());
+          addListener(elements.catalogFilters.group, 'change', ()=>buildCatalog());
+          addListener(elements.catalogFilters.level, 'change', ()=>buildCatalog());
+          addListener(elements.catalogFilters.step, 'change', ()=>buildCatalog());
+
+          addListener(elements.empFilters.empSel, 'change', ()=>renderDetail());
+          addListener(elements.empFilters.empCat, 'change', ()=>renderDetail());
+          addListener(elements.empFilters.empGroup, 'change', ()=>renderDetail());
+          addListener(elements.empFilters.empLevel, 'change', ()=>renderDetail());
+          addListener(elements.empFilters.empStep, 'change', ()=>renderDetail());
+        }
+
+        function init(){
+          loadData();
+          buildEmpPicker();
+          buildFacetOptions();
+          wireEvents();
+          setTab('overview');
+          runTests();
+        }
+
+        init();
+
+        return {
+          destroy(){
+            listeners.forEach(({target,type,handler})=>target.removeEventListener(type,handler));
+            hiddenFileInput.remove();
+            if(elements.app.parentNode) elements.app.parentNode.removeChild(elements.app);
+          },
+          getState(){
+            return {
+              employees: clone(state.employees),
+              classes: clone(state.classes),
+              completions: clone(state.completion)
+            };
+          },
+          setData(payload){
+            if(payload.employees) state.employees = clone(payload.employees);
+            if(payload.classes){
+              state.classes = clone(payload.classes);
+              state.catalog = enrichCatalog(state.classes);
+            }
+            if(payload.completions) state.completion = clone(payload.completions);
+            buildEmpPicker();
+            buildFacetOptions();
+            buildOverview();
+            renderDetail();
+            buildCatalog();
+          },
+          setTab,
+          elements,
+          state
+        };
+      }
+
+      window.TrainingTracker = {
+        mount(rootElement, options={}){
+          if(instance){
+            instance.destroy();
+            instance = null;
+          }
+          instance = createInstance(rootElement, options);
+          return instance;
+        },
+        setData(payload){
+          if(!instance) throw new Error('TrainingTracker is not mounted');
+          instance.setData(payload || {});
+        },
+        getState(){
+          if(!instance) throw new Error('TrainingTracker is not mounted');
+          return instance.getState();
+        },
+        destroy(){
+          if(instance){
+            instance.destroy();
+            instance = null;
+          }
+        }
+      };
+
+      function autoMount(){
+        const mountPoint = document.getElementById('tt-root');
+        if(mountPoint && !instance){
+          window.TrainingTracker.mount(mountPoint, {});
+        }
+      }
+
+      if(document.readyState !== 'loading'){
+        autoMount();
+      }else{
+        document.addEventListener('DOMContentLoaded', autoMount, {once:true});
+      }
+    })();
+  </script>
 </body>
 </html>
