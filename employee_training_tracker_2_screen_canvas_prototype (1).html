@@ -359,6 +359,9 @@
   <script>
     (function(){
       const STORAGE_KEY = 'tt-trainingTrackerState-v1';
+      const IDB_NAME = 'tt-training-tracker';
+      const IDB_STORE = 'state';
+      const IDB_KEY = 'singleton';
       const defaultEmployees = [
         {id:'E1',name:'Kaylie Taylor',title:'Concession'},
         {id:'E2',name:'Noah Walker',title:'Usher'},
@@ -429,6 +432,97 @@
       }
 
       let instance = null;
+      let persistenceMode = null; // 'idb' | 'local' | null
+      let dbPromise = null;
+      let saveQueue = Promise.resolve();
+
+      function getIndexedDb(){
+        if(dbPromise) return dbPromise;
+        if(typeof indexedDB === 'undefined'){ return Promise.resolve(null); }
+        dbPromise = new Promise((resolve, reject)=>{
+          try{
+            const request = indexedDB.open(IDB_NAME, 1);
+            request.onupgradeneeded = ()=>{
+              const db = request.result;
+              if(!db.objectStoreNames.contains(IDB_STORE)){
+                db.createObjectStore(IDB_STORE);
+              }
+            };
+            request.onsuccess = ()=> resolve(request.result);
+            request.onerror = ()=> reject(request.error || new Error('indexedDB open failed'));
+          }catch(err){
+            reject(err);
+          }
+        }).catch(err=>{
+          console.warn('TrainingTracker: indexedDB unavailable', err);
+          return null;
+        });
+        return dbPromise;
+      }
+
+      async function idbReadState(){
+        const db = await getIndexedDb();
+        if(!db) return null;
+        return new Promise((resolve, reject)=>{
+          try{
+            const tx = db.transaction(IDB_STORE, 'readonly');
+            const store = tx.objectStore(IDB_STORE);
+            const req = store.get(IDB_KEY);
+            req.onsuccess = ()=> resolve(req.result || null);
+            req.onerror = ()=> reject(req.error || new Error('indexedDB read failed'));
+            tx.onabort = ()=> reject(tx.error || new Error('indexedDB read aborted'));
+          }catch(err){
+            reject(err);
+          }
+        }).catch(err=>{
+          console.warn('TrainingTracker: failed to read indexedDB state', err);
+          return null;
+        });
+      }
+
+      async function idbWriteState(value){
+        const db = await getIndexedDb();
+        if(!db) throw new Error('indexedDB unavailable');
+        return new Promise((resolve, reject)=>{
+          try{
+            const tx = db.transaction(IDB_STORE, 'readwrite');
+            const store = tx.objectStore(IDB_STORE);
+            const req = store.put(value, IDB_KEY);
+            req.onsuccess = ()=> resolve();
+            req.onerror = ()=> reject(req.error || new Error('indexedDB write failed'));
+            tx.onabort = ()=> reject(tx.error || new Error('indexedDB write aborted'));
+          }catch(err){
+            reject(err);
+          }
+        });
+      }
+
+      function scheduleIdle(callback){
+        if(typeof requestIdleCallback === 'function'){
+          const id = requestIdleCallback(callback);
+          return {type:'idle', id};
+        }
+        const id = setTimeout(()=>callback({timeRemaining:()=>Number.MAX_VALUE}), 16);
+        return {type:'timeout', id};
+      }
+
+      function cancelIdleHandle(handle){
+        if(!handle) return;
+        if(handle.type === 'idle' && typeof cancelIdleCallback === 'function'){
+          cancelIdleCallback(handle.id);
+        }else if(handle.type === 'timeout'){
+          clearTimeout(handle.id);
+        }
+      }
+
+      function idlePause(){
+        return new Promise(resolve=>{
+          const token = scheduleIdle(()=>resolve());
+          if(token && token.type === 'timeout'){
+            // nothing extra needed for timeout variant
+          }
+        });
+      }
 
       function buildSelect(labelText, id){
         const wrapper = document.createElement('label');
@@ -677,6 +771,7 @@
         };
         let customClassCounter = 0;
         let activeTab = 'overview';
+        let overviewChunkCancel = null;
         const onChange = typeof options.onChange === 'function' ? options.onChange : null;
 
         const usePersistence = !options || (Object.keys(options).length === 0);
@@ -710,25 +805,68 @@
           state.completionCounts = counts;
         }
 
-        function loadData(){
+        async function loadData(){
           state.employees = clone(options.employees || defaultEmployees);
           state.classes = prepareClassList(clone(options.classes || defaultClasses));
           state.completion = clone(options.completions || {});
           state.completionMeta = clone(options.completionMeta || {});
-          if(usePersistence && typeof localStorage !== 'undefined'){
-            try{
-              const raw = localStorage.getItem(STORAGE_KEY);
-              if(raw){
-                const parsed = JSON.parse(raw);
-                if(parsed.completion) state.completion = clone(parsed.completion);
-                if(parsed.classes) state.classes = prepareClassList(clone(parsed.classes));
-                if(parsed.employees) state.employees = clone(parsed.employees);
-                if(parsed.completionMeta) state.completionMeta = clone(parsed.completionMeta);
+
+          if(usePersistence){
+            let restoredPersisted = false;
+            let loadedFromIndexedDb = false;
+            if(typeof indexedDB !== 'undefined'){
+              persistenceMode = 'idb';
+              try{
+                const persisted = await idbReadState();
+                if(persisted){
+                  if(persisted.completion) state.completion = clone(persisted.completion);
+                  if(persisted.classes) state.classes = prepareClassList(clone(persisted.classes));
+                  if(persisted.employees) state.employees = clone(persisted.employees);
+                  if(persisted.completionMeta) state.completionMeta = clone(persisted.completionMeta);
+                  restoredPersisted = true;
+                  loadedFromIndexedDb = true;
+                }
+              }catch(err){
+                console.warn('TrainingTracker: indexedDB load failed', err);
               }
-            }catch(err){
-              console.warn('TrainingTracker: failed to load saved state', err);
             }
+
+            if(!persistenceMode && typeof localStorage !== 'undefined'){
+              persistenceMode = 'local';
+            }
+
+            if(!restoredPersisted && typeof localStorage !== 'undefined'){
+              try{
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if(raw){
+                  const parsed = JSON.parse(raw);
+                  if(parsed.completion) state.completion = clone(parsed.completion);
+                  if(parsed.classes) state.classes = prepareClassList(clone(parsed.classes));
+                  if(parsed.employees) state.employees = clone(parsed.employees);
+                  if(parsed.completionMeta) state.completionMeta = clone(parsed.completionMeta);
+                  restoredPersisted = true;
+                }
+              }catch(err){
+                console.warn('TrainingTracker: failed to load saved state', err);
+              }
+            }
+
+            if(persistenceMode === 'idb' && restoredPersisted && !loadedFromIndexedDb){
+              // migrate localStorage payload into indexedDB asynchronously
+              const payload = {
+                completion: state.completion,
+                completionMeta: state.completionMeta,
+                classes: state.classes,
+                employees: state.employees
+              };
+              saveQueue = saveQueue.then(()=>idbWriteState(payload)).catch(err=>{
+                console.warn('TrainingTracker: migration to indexedDB failed', err);
+              });
+            }
+          }else{
+            persistenceMode = null;
           }
+
           state.catalog = enrichCatalog(state.classes);
           customClassCounter = state.classes.length;
           if(!Array.isArray(state.employees)) state.employees = [];
@@ -738,17 +876,32 @@
         }
 
         function saveState(){
-          if(!usePersistence || typeof localStorage === 'undefined') return;
-          try{
-            const payload = JSON.stringify({
-              completion: state.completion,
-              completionMeta: state.completionMeta,
-              classes: state.classes,
-              employees: state.employees
+          if(!usePersistence) return;
+          const payload = {
+            completion: state.completion,
+            completionMeta: state.completionMeta,
+            classes: state.classes,
+            employees: state.employees
+          };
+
+          if(persistenceMode === 'idb'){
+            saveQueue = saveQueue.then(()=>idbWriteState(payload)).catch(err=>{
+              console.warn('TrainingTracker: failed to persist state to indexedDB', err);
+              if(typeof localStorage !== 'undefined'){
+                persistenceMode = 'local';
+                try{
+                  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+                }catch(localErr){
+                  console.warn('TrainingTracker: fallback localStorage persist failed', localErr);
+                }
+              }
             });
-            localStorage.setItem(STORAGE_KEY, payload);
-          }catch(err){
-            console.warn('TrainingTracker: failed to persist state', err);
+          }else if(persistenceMode === 'local' && typeof localStorage !== 'undefined'){
+            try{
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+            }catch(err){
+              console.warn('TrainingTracker: failed to persist state', err);
+            }
           }
         }
 
@@ -939,7 +1092,7 @@
           return changed;
         }
 
-        function processImportText(text, options={}){
+        async function processImportText(text, options={}){
           const opts = options || {};
           const dryRun = !!(opts.preview || opts.dryRun);
           const fileName = opts.fileName ? String(opts.fileName) : '';
@@ -1009,144 +1162,167 @@
             state.classes = classes;
           }
 
+          const totalRows = parsed.rows.length;
+          const shouldYield = !dryRun && totalRows > 200;
+          const yieldInterval = 200;
+
           try{
-            parsed.rows.forEach((row, index)=>{
+            for(let index=0; index<totalRows; index+=1){
+              const row = parsed.rows[index];
               summary.rows += 1;
+
               const userNumber = resolveImportField(row, headerLookup, 'userNumber');
               const firstName = resolveImportField(row, headerLookup, 'firstName');
               const lastName = resolveImportField(row, headerLookup, 'lastName');
               const fullName = (()=>{
-              const combined = `${firstName} ${lastName}`.trim();
-              if(combined) return combined;
-              const fallback = resolveImportField(row, headerLookup, 'fullName');
-              return fallback || userNumber || '';
-            })();
-            if(!fullName){
-              summary.skipped += 1;
-              if(summary.warnings.length < 5){
-                summary.warnings.push(`Row ${index+2}: missing employee name.`);
-              }
-              return;
-            }
+                const combined = `${firstName} ${lastName}`.trim();
+                if(combined) return combined;
+                const fallback = resolveImportField(row, headerLookup, 'fullName');
+                return fallback || userNumber || '';
+              })();
 
-            let employee = null;
-            if(userNumber){
-              employee = employeeByExternal.get(String(userNumber).toLowerCase()) || null;
-            }
-            if(!employee){
-              employee = employeeByName.get(fullName.toLowerCase()) || null;
-            }
-            if(!employee){
-              const baseId = userNumber ? `ext-${userNumber}` : `import-${slug(fullName) || Date.now().toString(36)}`;
-              let candidate = baseId;
-              let counter = 1;
-              while(employeeById.has(candidate)){
-                candidate = `${baseId}-${counter+=1}`;
+              if(!fullName){
+                summary.skipped += 1;
+                if(summary.warnings.length < 5){
+                  summary.warnings.push(`Row ${index+2}: missing employee name.`);
+                }
+                if(shouldYield && index > 0 && index % yieldInterval === 0){
+                  await idlePause();
+                }
+                continue;
               }
-              employee = {
-                id: candidate,
-                name: fullName,
-                title: resolveImportField(row, headerLookup, 'jobCode') || ''
-              };
-              if(userNumber) employee.externalId = userNumber;
+
+              let employee = null;
+              if(userNumber){
+                employee = employeeByExternal.get(String(userNumber).toLowerCase()) || null;
+              }
+              if(!employee){
+                employee = employeeByName.get(fullName.toLowerCase()) || null;
+              }
+              if(!employee){
+                const baseId = userNumber ? `ext-${userNumber}` : `import-${slug(fullName) || Date.now().toString(36)}`;
+                let candidate = baseId;
+                let counter = 1;
+                while(employeeById.has(candidate)){
+                  candidate = `${baseId}-${counter+=1}`;
+                }
+                employee = {
+                  id: candidate,
+                  name: fullName,
+                  title: resolveImportField(row, headerLookup, 'jobCode') || ''
+                };
+                if(userNumber) employee.externalId = userNumber;
+                const location = resolveImportField(row, headerLookup, 'location');
+                if(location) employee.location = location;
+                const orgCode = resolveImportField(row, headerLookup, 'orgCode');
+                if(orgCode) employee.organizationCode = orgCode;
+                const status = resolveImportField(row, headerLookup, 'status');
+                if(status) employee.status = status;
+                employees.push(employee);
+                registerEmployee(employee);
+                summary.employeesAdded += 1;
+              }else{
+                if(userNumber && !employee.externalId){
+                  employee.externalId = userNumber;
+                  employeeByExternal.set(String(userNumber).toLowerCase(), employee);
+                }
+                const jobCode = resolveImportField(row, headerLookup, 'jobCode');
+                if(jobCode) employee.title = jobCode;
+                const location = resolveImportField(row, headerLookup, 'location');
+                if(location) employee.location = location;
+              }
+
+              const moduleRef = resolveImportField(row, headerLookup, 'moduleReference');
+              const moduleName = resolveImportField(row, headerLookup, 'moduleName') || moduleRef;
+              const moduleId = resolveImportField(row, headerLookup, 'moduleId');
+              if(!moduleRef && !moduleName){
+                summary.skipped += 1;
+                if(summary.warnings.length < 5){
+                  summary.warnings.push(`Row ${index+2}: missing module reference/name.`);
+                }
+                if(shouldYield && index > 0 && index % yieldInterval === 0){
+                  await idlePause();
+                }
+                continue;
+              }
+
+              let cls = null;
+              if(moduleRef) cls = classByShort.get(moduleRef.toLowerCase()) || null;
+              if(!cls && moduleId) cls = classByModuleId.get(moduleId.toLowerCase()) || null;
+              if(!cls && moduleName) cls = classByName.get(moduleName.toLowerCase()) || null;
+              if(!cls){
+                const payload = {
+                  short: moduleRef || moduleName || 'Imported Class',
+                  name: moduleName || moduleRef || 'Imported Class',
+                  area: 'Imported',
+                  group: 'External LMS',
+                  level: '',
+                  step: ''
+                };
+                const id = generateClassId(payload);
+                const newClass = {...payload, id};
+                if(moduleId) newClass.moduleId = moduleId;
+                if(moduleRef) newClass.moduleReference = moduleRef;
+                classes.push(newClass);
+                registerClass(newClass);
+                summary.classesAdded += 1;
+                customClassCounter = state.classes.length;
+                cls = newClass;
+              }else{
+                if(moduleId && !cls.moduleId) cls.moduleId = moduleId;
+                if(moduleRef && !cls.moduleReference) cls.moduleReference = moduleRef;
+                if(moduleRef && !cls.short) cls.short = moduleRef;
+                if(moduleRef) classByShort.set(moduleRef.toLowerCase(), cls);
+                if(moduleId) classByModuleId.set(moduleId.toLowerCase(), cls);
+              }
+
+              const completionDate = resolveImportField(row, headerLookup, 'completionDate');
+              const archived = resolveImportField(row, headerLookup, 'archived');
+              if(archived && /^y(es)?$/i.test(archived)){
+                summary.skipped += 1;
+                if(shouldYield && index > 0 && index % yieldInterval === 0){
+                  await idlePause();
+                }
+                continue;
+              }
+              if(!completionDate){
+                summary.skipped += 1;
+                if(shouldYield && index > 0 && index % yieldInterval === 0){
+                  await idlePause();
+                }
+                continue;
+              }
+
+              const empId = employee.id;
+              const classId = cls.id;
+              const already = !!(completionStore[empId]?.[classId]);
               const location = resolveImportField(row, headerLookup, 'location');
-              if(location) employee.location = location;
-              const orgCode = resolveImportField(row, headerLookup, 'orgCode');
-              if(orgCode) employee.organizationCode = orgCode;
               const status = resolveImportField(row, headerLookup, 'status');
-              if(status) employee.status = status;
-              employees.push(employee);
-              registerEmployee(employee);
-              summary.employeesAdded += 1;
-            }else{
-              if(userNumber && !employee.externalId){
-                employee.externalId = userNumber;
-                employeeByExternal.set(String(userNumber).toLowerCase(), employee);
-              }
-              const jobCode = resolveImportField(row, headerLookup, 'jobCode');
-              if(jobCode) employee.title = jobCode;
-              const location = resolveImportField(row, headerLookup, 'location');
-              if(location) employee.location = location;
-            }
-
-            const moduleRef = resolveImportField(row, headerLookup, 'moduleReference');
-            const moduleName = resolveImportField(row, headerLookup, 'moduleName') || moduleRef;
-            const moduleId = resolveImportField(row, headerLookup, 'moduleId');
-            if(!moduleRef && !moduleName){
-              summary.skipped += 1;
-              if(summary.warnings.length < 5){
-                summary.warnings.push(`Row ${index+2}: missing module reference/name.`);
-              }
-              return;
-            }
-
-            let cls = null;
-            if(moduleRef) cls = classByShort.get(moduleRef.toLowerCase()) || null;
-            if(!cls && moduleId) cls = classByModuleId.get(moduleId.toLowerCase()) || null;
-            if(!cls && moduleName) cls = classByName.get(moduleName.toLowerCase()) || null;
-            if(!cls){
-              const payload = {
-                short: moduleRef || moduleName || 'Imported Class',
-                name: moduleName || moduleRef || 'Imported Class',
-                area: 'Imported',
-                group: 'External LMS',
-                level: '',
-                step: ''
+              const orgCode = resolveImportField(row, headerLookup, 'orgCode');
+              const meta = {
+                completionDate,
+                moduleReference: moduleRef || cls.short || cls.name,
+                moduleName: moduleName || cls.name,
+                moduleId: moduleId || cls.moduleId,
+                fileName: fileName || undefined,
+                importedAt: new Date().toISOString(),
+                location: location || undefined,
+                status: status || undefined,
+                organizationCode: orgCode || undefined,
+                userNumber: userNumber || undefined
               };
-              const id = generateClassId(payload);
-              const newClass = {...payload, id};
-              if(moduleId) newClass.moduleId = moduleId;
-              if(moduleRef) newClass.moduleReference = moduleRef;
-              classes.push(newClass);
-              registerClass(newClass);
-              summary.classesAdded += 1;
-              customClassCounter = state.classes.length;
-              cls = newClass;
-            }else{
-              if(moduleId && !cls.moduleId) cls.moduleId = moduleId;
-              if(moduleRef && !cls.moduleReference) cls.moduleReference = moduleRef;
-              if(moduleRef && !cls.short) cls.short = moduleRef;
-              if(moduleRef) classByShort.set(moduleRef.toLowerCase(), cls);
-              if(moduleId) classByModuleId.set(moduleId.toLowerCase(), cls);
-            }
 
-            const completionDate = resolveImportField(row, headerLookup, 'completionDate');
-            const archived = resolveImportField(row, headerLookup, 'archived');
-            if(archived && /^y(es)?$/i.test(archived)){
-              summary.skipped += 1;
-              return;
-            }
-            if(!completionDate){
-              summary.skipped += 1;
-              return;
-            }
-
-            const empId = employee.id;
-            const classId = cls.id;
-            const already = !!(completionStore[empId]?.[classId]);
-            const location = resolveImportField(row, headerLookup, 'location');
-            const status = resolveImportField(row, headerLookup, 'status');
-            const orgCode = resolveImportField(row, headerLookup, 'orgCode');
-            const meta = {
-              completionDate,
-              moduleReference: moduleRef || cls.short || cls.name,
-              moduleName: moduleName || cls.name,
-              moduleId: moduleId || cls.moduleId,
-              fileName: fileName || undefined,
-              importedAt: new Date().toISOString(),
-              location: location || undefined,
-              status: status || undefined,
-              organizationCode: orgCode || undefined,
-              userNumber: userNumber || undefined
-            };
-
-            applyCompletionRecord(completionStore, metaStore, empId, classId, true, meta);
+              applyCompletionRecord(completionStore, metaStore, empId, classId, true, meta);
               summary.completions += 1;
               if(!already) summary.newlyCompleted += 1;
               if(!already && !dryRun){
                 changedRecords.set(`${empId}|${classId}`, {employeeId: empId, classId, done: true});
               }
-            });
+
+              if(shouldYield && index > 0 && index % yieldInterval === 0){
+                await idlePause();
+              }
+            }
 
             if(dryRun){
               return summary;
@@ -1227,15 +1403,15 @@
           const file = input?.files?.[0];
           if(!file) return;
           const reader = new FileReader();
-          reader.onload = ()=>{
+          reader.onload = async ()=>{
             try{
               const text = typeof reader.result === 'string'
                 ? reader.result
                 : '';
-              const summary = processImportText(text, {fileName: file.name});
+              const summary = await processImportText(text, {fileName: file.name});
               showImportSummary(summary);
             }catch(err){
-              showImportSummary({error: err.message || 'Import failed.'});
+              showImportSummary({error: err?.message || 'Import failed.'});
             }
             input.value = '';
           };
@@ -1561,7 +1737,15 @@
           return Math.max(0, Math.min(100, pct));
         }
 
+        function cancelOverviewChunks(){
+          if(overviewChunkCancel){
+            cancelIdleHandle(overviewChunkCancel);
+            overviewChunkCancel = null;
+          }
+        }
+
         function setOverviewEmpty(message){
+          cancelOverviewChunks();
           elements.overviewEmpty.textContent = message;
           elements.overviewEmpty.classList.remove('tt-hidden');
           elements.overviewTable.classList.add('tt-hidden');
@@ -1572,11 +1756,66 @@
           elements.overviewTable.classList.remove('tt-hidden');
         }
 
+        function renderOverviewRows(classList){
+          cancelOverviewChunks();
+          const rows = state.employees.map(emp=>({
+            emp,
+            bucket: state.completion[emp.id] || null
+          }));
+          if(rows.length === 0) return;
+          const body = elements.overviewBody;
+          const perRowCost = Math.max(1, classList.length + 1);
+          const chunkSize = Math.max(5, Math.min(50, Math.floor(900 / perRowCost)));
+          let index = 0;
+
+          const buildRow = (rowData)=>{
+            const {emp, bucket} = rowData;
+            const tr = document.createElement('tr');
+            tr.dataset.empId = emp.id;
+            tr.tabIndex = 0;
+            const nameCell = document.createElement('th');
+            nameCell.scope = 'row';
+            nameCell.className = 'tt-emp-col';
+            nameCell.textContent = emp.name;
+            tr.appendChild(nameCell);
+            classList.forEach(cls=>{
+              const td = document.createElement('td');
+              td.className = 'tt-cls-col';
+              const done = !!(bucket && bucket[cls.id]);
+              td.appendChild(markCell(done));
+              tr.appendChild(td);
+            });
+            tr.appendChild(buildProgressCell(emp.id));
+            attachRowInteraction(tr, emp.id);
+            return tr;
+          };
+
+          const run = (deadline)=>{
+            overviewChunkCancel = null;
+            const frag = document.createDocumentFragment();
+            let processed = 0;
+            while(index < rows.length && processed < chunkSize && (!deadline || deadline.timeRemaining() > 4)){
+              frag.appendChild(buildRow(rows[index]));
+              index += 1;
+              processed += 1;
+            }
+            if(frag.childNodes.length){
+              body.appendChild(frag);
+            }
+            if(index < rows.length){
+              overviewChunkCancel = scheduleIdle(run);
+            }
+          };
+
+          overviewChunkCancel = scheduleIdle(run);
+        }
+
         function buildOverview(){
           const head = elements.overviewHead;
           const body = elements.overviewBody;
           head.textContent = '';
           body.textContent = '';
+          cancelOverviewChunks();
 
           const selectedClassId = elements.classFilter.value;
           const cat = elements.catFilter.value;
@@ -1614,26 +1853,7 @@
             thProg.textContent = 'Progress';
             headRow.append(thEmp, thCls, thProg);
             head.appendChild(headRow);
-
-            const frag = document.createDocumentFragment();
-            state.employees.forEach(emp=>{
-              const tr = document.createElement('tr');
-              tr.dataset.empId = emp.id;
-              tr.tabIndex = 0;
-              const nameCell = document.createElement('th');
-              nameCell.scope = 'row';
-              nameCell.className = 'tt-emp-col';
-              nameCell.textContent = emp.name;
-              const statusCell = document.createElement('td');
-              statusCell.className = 'tt-cls-col';
-              const done = !!(state.completion[emp.id]?.[cls.id]);
-              statusCell.appendChild(markCell(done));
-              const progressCell = buildProgressCell(emp.id);
-              tr.append(nameCell, statusCell, progressCell);
-              attachRowInteraction(tr, emp.id);
-              frag.appendChild(tr);
-            });
-            body.appendChild(frag);
+            renderOverviewRows([cls]);
             return;
           }
 
@@ -1663,29 +1883,7 @@
           thProg.textContent = 'Progress';
           headRow.appendChild(thProg);
           head.appendChild(headRow);
-
-          const frag = document.createDocumentFragment();
-          state.employees.forEach(emp=>{
-            const tr = document.createElement('tr');
-            tr.dataset.empId = emp.id;
-            tr.tabIndex = 0;
-            const nameCell = document.createElement('th');
-            nameCell.scope = 'row';
-            nameCell.className = 'tt-emp-col';
-            nameCell.textContent = emp.name;
-            tr.appendChild(nameCell);
-            filtered.forEach(cls=>{
-              const td = document.createElement('td');
-              td.className = 'tt-cls-col';
-              const done = !!(state.completion[emp.id]?.[cls.id]);
-              td.appendChild(markCell(done));
-              tr.appendChild(td);
-            });
-            tr.appendChild(buildProgressCell(emp.id));
-            attachRowInteraction(tr, emp.id);
-            frag.appendChild(tr);
-          });
-          body.appendChild(frag);
+          renderOverviewRows(filtered);
         }
 
         function buildProgressCell(empId){
@@ -1952,7 +2150,7 @@
             },
             { name:'T11 import preview', fn: async ()=>{
                 const sample = 'User Number\tFirst Name\tSurname\tModule Reference\tModule Name\tCompletion Date\n1000\tTest\tUser\tBLOODPTH\tBloodborne Pathogens\t2025-09-01';
-                const summary = processImportText(sample, {preview:true});
+                const summary = await processImportText(sample, {preview:true});
                 if(summary.completions !== 1) throw new Error('import summary mismatch');
                 if(summary.rows !== 1) throw new Error('row count mismatch');
               }
@@ -2008,8 +2206,8 @@
           addListener(elements.empFilters.empStep, 'change', ()=>renderDetail());
         }
 
-        function init(){
-          loadData();
+        async function init(){
+          await loadData();
           buildEmpPicker();
           buildFacetOptions();
           wireEvents();
@@ -2018,10 +2216,11 @@
           runTests();
         }
 
-        init();
+        init().catch(err=>console.error('TrainingTracker init failed', err));
 
         return {
           destroy(){
+            cancelOverviewChunks();
             listeners.forEach(({target,type,handler})=>target.removeEventListener(type,handler));
             if(elements.app.parentNode) elements.app.parentNode.removeChild(elements.app);
           },
