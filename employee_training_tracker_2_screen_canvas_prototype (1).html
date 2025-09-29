@@ -55,7 +55,46 @@
     .checkbox input:checked + .box{background:var(--accent);border-color:var(--accent);} .checkbox input:checked + .box::after{content:"";position:absolute;left:3px;top:-1px;width:8px;height:14px;border-right:3px solid #ffffff;border-bottom:3px solid #ffffff;transform:rotate(45deg)}
     .area-block{margin:12px 0 20px}
     .area-title{color:var(--accent);font-weight:800;font-size:18px;margin:0 0 8px 0;border-bottom:2px solid var(--accent);display:inline-block;padding-bottom:2px}
-    .checks-grid{display:grid;grid-template-columns:repeat(4,minmax(180px,1fr));gap:14px 26px}
+
+    .area-rows{display:flex;flex-direction:column;gap:12px}
+    .rowcard{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--ring);border-radius:14px;background:#fff;box-shadow:0 6px 16px rgba(15,23,42,0.06);transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease}
+    .rowcard:hover{border-color:#cbd5f5;box-shadow:0 10px 22px rgba(15,23,42,0.12);transform:translateY(-1px)}
+    .rowcard.open{border-color:#a5b4fc}
+    .statusbtn{width:28px;height:28px;border-radius:8px;border:2px solid var(--accent);background:transparent;display:inline-flex;align-items:center;justify-content:center;color:var(--accent);font-weight:700;cursor:pointer;transition:all .2s ease;flex-shrink:0}
+    .statusbtn svg{width:16px;height:16px}
+    .statusbtn[aria-pressed="true"]{background:linear-gradient(135deg,var(--brand-from),var(--brand-to));border-color:transparent;color:#fff;box-shadow:0 0 0 1px rgba(255,255,255,0.4) inset}
+    .statusbtn:focus-visible{outline:3px solid rgba(59,130,246,0.35);outline-offset:2px}
+
+    .summary{display:flex;flex-direction:column;align-items:flex-start;gap:4px;background:none;border:none;text-align:left;padding:0;color:inherit;font:inherit;cursor:pointer}
+    .summary .title{font-weight:600;font-size:15px;color:#111827}
+    .summary .meta{font-size:13px;color:var(--muted)}
+
+    .chev{background:none;border:none;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;width:28px;height:28px;transition:transform .2s ease}
+    .rowcard.open .chev{transform:rotate(90deg);color:var(--accent)}
+
+    .details{grid-column:1/-1;padding-top:12px;border-top:1px solid #e5e7eb;margin-top:12px;overflow:hidden;max-height:0;opacity:0;transition:max-height .24s ease,opacity .2s ease}
+    .rowcard.open .details{max-height:600px;opacity:1}
+    .details[hidden]{display:block;max-height:0;opacity:0;padding-top:0;margin-top:0;border-top:none}
+    .note{width:100%;min-height:88px;resize:vertical;border-radius:12px;border:1px solid var(--ring);padding:10px;font:inherit;line-height:1.4;box-shadow:0 2px 6px rgba(15,23,42,0.05);transition:border-color .2s ease,box-shadow .2s ease}
+    .note:focus{border-color:#a5b4fc;box-shadow:0 4px 16px rgba(99,102,241,0.25)}
+    .actions{display:flex;gap:8px;margin-top:8px}
+    .actions button{padding:6px 12px;border-radius:999px;border:1px solid var(--ring);background:#fff;font:inherit;cursor:pointer;transition:background .2s ease,border-color .2s ease,transform .2s ease}
+    .actions button:hover{background:#f3f4ff;border-color:#c7d2fe}
+    .actions .done{background:linear-gradient(135deg,var(--brand-from),var(--brand-to));color:#fff;border:none;box-shadow:0 4px 12px rgba(99,102,241,0.35)}
+    .actions .done:hover{transform:translateY(-1px)}
+
+    .photostrip{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .thumb{position:relative;width:72px;height:72px;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(15,23,42,0.16)}
+    .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+    .thumb button{position:absolute;top:4px;right:4px;width:20px;height:20px;border:none;border-radius:50%;background:rgba(15,23,42,0.76);color:#fff;font-size:12px;cursor:pointer}
+    .thumb button:hover{background:rgba(220,38,38,0.85)}
+
+    @media (max-width:720px){
+      .rowcard{grid-template-columns:auto 1fr auto;gap:10px;padding:12px}
+      .statusbtn{width:26px;height:26px}
+      .summary .title{font-size:14px}
+      .summary .meta{font-size:12px}
+    }
     .sigline{border:none;border-bottom:2px solid #111827;background:transparent;min-width:220px;padding:4px 6px}
     .sig-row{align-items:flex-end;gap:16px}
     .spacer{flex:1 1 auto}
@@ -189,6 +228,75 @@ let fullCatalog = coursesRaw.map(r=>{
 });
 
 let completion={};
+let notes={};
+let photos={};
+const STORAGE_KEY='trainingTrackerState';
+
+function loadState(){
+  if(typeof localStorage==='undefined') return;
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const parsed = JSON.parse(raw);
+    completion = parsed.completion || {};
+    notes = parsed.notes || {};
+    photos = parsed.photos || {};
+  }catch(err){
+    console.warn('Failed to load saved state', err);
+  }
+}
+
+function saveState(){
+  if(typeof localStorage==='undefined') return;
+  try{
+    const payload = JSON.stringify({completion, notes, photos});
+    localStorage.setItem(STORAGE_KEY, payload);
+  }catch(err){
+    console.warn('Failed to persist state', err);
+  }
+}
+
+function ensureBucket(store, id){
+  if(!store[id]) store[id] = {};
+  return store[id];
+}
+
+function getNote(empId,classId){
+  return notes[empId]?.[classId] || '';
+}
+
+function setNote(empId,classId,value){
+  const trimmed = value.trim();
+  if(trimmed){
+    ensureBucket(notes, empId)[classId] = value;
+  }else if(notes[empId]){
+    delete notes[empId][classId];
+    if(Object.keys(notes[empId]).length===0) delete notes[empId];
+  }
+  saveState();
+}
+
+function getPhotos(empId,classId){
+  return photos[empId]?.[classId] ? [...photos[empId][classId]] : [];
+}
+
+function setPhotos(empId,classId,list){
+  if(list.length){
+    ensureBucket(photos, empId)[classId] = list;
+  }else if(photos[empId]){
+    delete photos[empId][classId];
+    if(Object.keys(photos[empId]).length===0) delete photos[empId];
+  }
+  saveState();
+}
+
+function toggleCompletion(empId,classId){
+  ensureBucket(completion, empId)[classId] = !completion[empId]?.[classId];
+  saveState();
+  buildOverview();
+}
+
+loadState();
 
 // ---------- Facets ----------
 function uniqueSorted(arr){ return Array.from(new Set(arr.filter(x=>x!==undefined))).sort((a,b)=> String(a).localeCompare(String(b))); }
@@ -268,6 +376,244 @@ function buildCatalog(){
 
 // ---------- Employee Detail ----------
 function buildEmpPicker(){ $('empSel').innerHTML = employees.map(e=>`<option value="${e.id}">${e.name}</option>`).join(''); }
+
+let openRowKey=null;
+const hiddenFileInput=document.createElement('input');
+hiddenFileInput.type='file';
+hiddenFileInput.accept='image/*';
+hiddenFileInput.multiple=true;
+hiddenFileInput.style.position='fixed';
+hiddenFileInput.style.top='-10000px';
+hiddenFileInput.style.left='-10000px';
+document.body.appendChild(hiddenFileInput);
+let pendingFileCallback=null;
+let pickFile=function(cb){
+  pendingFileCallback = cb;
+  hiddenFileInput.click();
+};
+hiddenFileInput.addEventListener('change',()=>{
+  const files = Array.from(hiddenFileInput.files||[]);
+  hiddenFileInput.value='';
+  if(pendingFileCallback){
+    pendingFileCallback(files);
+    pendingFileCallback=null;
+  }
+});
+
+const checkSvg='<svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M8.2 13.4 4.8 10l1.4-1.4 2 2 5.6-5.6 1.4 1.4-7 7z"></path></svg>';
+const chevronSvg='<svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M7.2 3.5 5.8 4.9l6.2 6.1-6.2 6.1 1.4 1.4 7.6-7.5-7.6-7.5z"></path></svg>';
+
+function computeMetaText(noteText, photoCount){
+  const hasContent = !!noteText.trim() || photoCount>0;
+  let label = hasContent ? 'Edit comment' : 'Add comment';
+  if(photoCount>0){
+    label += ` • ${photoCount} photo${photoCount>1?'s':''}`;
+  }
+  return label;
+}
+
+function renderPhotos(row, empId, classId){
+  const strip = row.querySelector('.photostrip');
+  strip.innerHTML='';
+  const list = getPhotos(empId,classId);
+  list.forEach((src,idx)=>{
+    const thumb=document.createElement('div');
+    thumb.className='thumb';
+    const img=document.createElement('img');
+    img.src=src;
+    img.alt=`Training photo ${idx+1}`;
+    const removeBtn=document.createElement('button');
+    removeBtn.type='button';
+    removeBtn.setAttribute('aria-label','Remove photo');
+    removeBtn.textContent='×';
+    removeBtn.onclick=()=>{
+      const updated = getPhotos(empId,classId);
+      updated.splice(idx,1);
+      setPhotos(empId,classId,updated);
+      renderPhotos(row,empId,classId);
+      updateMeta(row,empId,classId);
+    };
+    thumb.append(img, removeBtn);
+    strip.appendChild(thumb);
+  });
+}
+
+function updateStatusButton(row, empId, classId){
+  const statusBtn=row.querySelector('.statusbtn');
+  const done=!!(completion[empId]?.[classId]);
+  statusBtn.setAttribute('aria-pressed', done?'true':'false');
+  statusBtn.innerHTML=done?checkSvg:'';
+  statusBtn.title=done?'Mark incomplete':'Mark complete';
+}
+
+function updateMeta(row, empId, classId){
+  const meta=row.querySelector('.summary .meta');
+  const noteText=getNote(empId,classId);
+  const photoCount=getPhotos(empId,classId).length;
+  meta.textContent=computeMetaText(noteText, photoCount);
+}
+
+function commitNote(row){
+  const key=row.dataset.rowkey;
+  if(!key) return;
+  const [empId,classId]=key.split('|');
+  const textarea=row.querySelector('.note');
+  if(!textarea) return;
+  setNote(empId,classId,textarea.value);
+  updateMeta(row,empId,classId);
+}
+
+function openRow(row){
+  if(!row) return;
+  const key=row.dataset.rowkey;
+  if(openRowKey && openRowKey!==key){
+    const prev=document.querySelector(`.rowcard[data-rowkey="${openRowKey}"]`);
+    if(prev) closeRow(prev,false);
+  }
+  const details=row.querySelector('.details');
+  details.hidden=false;
+  requestAnimationFrame(()=>row.classList.add('open'));
+  row.querySelector('.summary').setAttribute('aria-expanded','true');
+  row.querySelector('.chev').setAttribute('aria-label','Collapse');
+  openRowKey=key;
+  const note=row.querySelector('.note');
+  setTimeout(()=>{
+    if(document.body.contains(row)){
+      note?.focus();
+      note?.setSelectionRange(note.value.length,note.value.length);
+    }
+  },160);
+}
+
+function closeRow(row, focusSummary=true){
+  if(!row) return;
+  commitNote(row);
+  const key=row.dataset.rowkey;
+  const details=row.querySelector('.details');
+  row.classList.remove('open');
+  row.querySelector('.summary').setAttribute('aria-expanded','false');
+  row.querySelector('.chev').setAttribute('aria-label','Expand');
+  if(openRowKey===key) openRowKey=null;
+  setTimeout(()=>{ if(!row.classList.contains('open')) details.hidden=true; },220);
+  if(focusSummary){
+    const summary=row.querySelector('.summary');
+    summary?.focus();
+  }
+}
+
+function buildRowCard(empId, cls){
+  const row=document.createElement('div');
+  row.className='rowcard';
+  row.dataset.rowkey=`${empId}|${cls.id}`;
+
+  const statusBtn=document.createElement('button');
+  statusBtn.className='statusbtn';
+  statusBtn.type='button';
+  statusBtn.setAttribute('aria-pressed','false');
+  statusBtn.title='Mark complete';
+
+  const summaryBtn=document.createElement('button');
+  summaryBtn.className='summary';
+  summaryBtn.type='button';
+  summaryBtn.setAttribute('aria-expanded','false');
+  summaryBtn.innerHTML=`<div class="title">${cls.name}</div><div class="meta">Add comment</div>`;
+
+  const chevBtn=document.createElement('button');
+  chevBtn.className='chev';
+  chevBtn.type='button';
+  chevBtn.setAttribute('aria-label','Expand');
+  chevBtn.innerHTML=chevronSvg;
+
+  const details=document.createElement('div');
+  details.className='details';
+  details.hidden=true;
+
+  const textarea=document.createElement('textarea');
+  textarea.className='note';
+  textarea.placeholder='Add comment (optional)';
+
+  const actions=document.createElement('div');
+  actions.className='actions';
+  const doneBtn=document.createElement('button');
+  doneBtn.className='done';
+  doneBtn.type='button';
+  doneBtn.textContent='Done';
+  const photoBtn=document.createElement('button');
+  photoBtn.className='photo';
+  photoBtn.type='button';
+  photoBtn.textContent='Add Photo';
+  actions.append(doneBtn, photoBtn);
+
+  const photoStrip=document.createElement('div');
+  photoStrip.className='photostrip';
+
+  details.append(textarea, actions, photoStrip);
+  row.append(statusBtn, summaryBtn, chevBtn, details);
+
+  textarea.value=getNote(empId, cls.id);
+  updateStatusButton(row, empId, cls.id);
+  updateMeta(row, empId, cls.id);
+  renderPhotos(row, empId, cls.id);
+
+  statusBtn.onclick=(ev)=>{
+    ev.preventDefault();
+    toggleCompletion(empId, cls.id);
+    updateStatusButton(row, empId, cls.id);
+  };
+
+  const toggleRow=()=>{
+    if(row.classList.contains('open')){
+      closeRow(row,false);
+    }else{
+      openRow(row);
+    }
+  };
+
+  summaryBtn.onclick=(ev)=>{ ev.preventDefault(); toggleRow(); };
+  chevBtn.onclick=(ev)=>{ ev.preventDefault(); toggleRow(); };
+
+  textarea.addEventListener('blur',()=>commitNote(row));
+  textarea.addEventListener('keydown',(ev)=>{
+    if((ev.ctrlKey||ev.metaKey) && ev.key==='Enter'){
+      ev.preventDefault();
+      commitNote(row);
+      closeRow(row);
+    }else if(ev.key==='Escape'){
+      ev.preventDefault();
+      closeRow(row);
+    }
+  });
+
+  doneBtn.onclick=()=>{ commitNote(row); closeRow(row); };
+
+  photoBtn.onclick=(ev)=>{
+    ev.preventDefault();
+    const [eId,cId]=row.dataset.rowkey.split('|');
+    pickFile(async files=>{
+      if(!files || files.length===0) return;
+      const existing=getPhotos(eId,cId);
+      for(const file of files){
+        const dataUrl=await fileToDataURL(file);
+        if(dataUrl) existing.push(dataUrl);
+      }
+      setPhotos(eId,cId,existing);
+      renderPhotos(row,eId,cId);
+      updateMeta(row,eId,cId);
+    });
+  };
+
+  return row;
+}
+
+async function fileToDataURL(file){
+  return new Promise(resolve=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(reader.result);
+    reader.onerror=()=>resolve('');
+    reader.readAsDataURL(file);
+  });
+}
+
 function renderDetail(){
   const empId = $('empSel').value || employees[0].id; $('empSel').value = empId;
   const cat = $('empCat').value; const grp = $('empGroup').value; const lvl = $('empLevel').value; const stp = $('empStep').value;
@@ -275,41 +621,108 @@ function renderDetail(){
     .filter(c=> (!cat || c.area===cat) && (!grp || c.group===grp) && (!lvl || c.level===lvl) && (!stp || String(c.step)===String(stp)))
     .sort((a,b)=> a.name.localeCompare(b.name));
 
+  const host=$('detailHost');
+  host.innerHTML='';
+
+  if(list.length===0){
+    host.innerHTML='<div class="muted">No classes match the current filters.</div>';
+    openRowKey=null;
+    return;
+  }
+
   const byArea = new Map();
   list.forEach(cls=>{ const a = cls.area || 'Other'; if(!byArea.has(a)) byArea.set(a, []); byArea.get(a).push(cls); });
 
-  let html='';
+  const previousOpen=openRowKey;
+  openRowKey=null;
+
   byArea.forEach((items, area)=>{
-    html += `<div class="area-block">`+
-            `<h3 class="area-title">${area}</h3>`+
-            `<div class="checks-grid">`;
+    const block=document.createElement('div');
+    block.className='area-block';
+    block.innerHTML=`<h3 class="area-title">${area}</h3>`;
+    const rows=document.createElement('div');
+    rows.className='area-rows';
     items.forEach(cls=>{
-      const checked = completion[empId]?.[cls.id] ? 'checked' : '';
-      html += `<label class="checkbox">`
-            + `<input type="checkbox" data-emp="${empId}" data-cls="${cls.id}" ${checked}>`
-            + `<span class="box"></span>`
-            + `<span>${cls.name}</span>`
-            + `</label>`;
+      const row=buildRowCard(empId, cls);
+      rows.appendChild(row);
     });
-    html += `</div></div>`;
+    block.appendChild(rows);
+    host.appendChild(block);
   });
 
-  $('detailHost').innerHTML = html || '<div class="muted">No classes match the current filters.</div>';
-  $('detailHost').querySelectorAll('input[data-cls]').forEach(cb=>{
-    cb.onchange = ()=>{
-      const e = cb.getAttribute('data-emp'); const c = cb.getAttribute('data-cls');
-      completion[e] = completion[e] || {}; completion[e][c] = cb.checked; buildOverview();
-    };
-  });
+  if(previousOpen){
+    const reopen = host.querySelector(`.rowcard[data-rowkey="${previousOpen}"]`);
+    if(reopen) openRow(reopen);
+  }
 }
 
 // ---------- Self-tests ----------
-function runTests(){
+async function runTests(){
   const out = [];
+  const wait = (ms)=>new Promise(res=>setTimeout(res,ms));
   try { buildFacetOptions(); out.push('T1 facets ok'); } catch(e){ out.push('T1 fail '+e.message); }
   try { buildOverview(); out.push('T2 overview ok'); } catch(e){ out.push('T2 fail '+e.message); }
-  try { buildEmpPicker(); renderDetail(); const has = document.querySelectorAll('#detailHost input[type=checkbox]').length >= 1; if(!has) throw new Error('no detail items'); out.push('T3 detail ok'); } catch(e){ out.push('T3 fail '+e.message); }
-  try { buildCatalog(); const rows = document.querySelectorAll('#catalogBody tr').length; if(rows<1) throw new Error('catalog empty'); out.push('T4 catalog ok'); } catch(e){ out.push('T4 fail '+e.message); }
+  try {
+    buildEmpPicker();
+    renderDetail();
+    const has = document.querySelectorAll('#detailHost .rowcard').length >= 1;
+    if(!has) throw new Error('no detail items');
+    out.push('T3 detail ok');
+  } catch(e){ out.push('T3 fail '+e.message); }
+  try {
+    const firstRow = document.querySelector('#detailHost .rowcard');
+    if(!firstRow) throw new Error('no row');
+    const statusBtn = firstRow.querySelector('.statusbtn');
+    const [empId,classId] = firstRow.dataset.rowkey.split('|');
+    const before = !!(completion[empId]?.[classId]);
+    statusBtn.click();
+    const after = !!(completion[empId]?.[classId]);
+    if(before===after) throw new Error('toggle failed');
+    statusBtn.click();
+    out.push('T4 toggle ok');
+  } catch(e){ out.push('T4 fail '+e.message); }
+  try {
+    const firstRow = document.querySelector('#detailHost .rowcard');
+    if(!firstRow) throw new Error('no row');
+    const summary = firstRow.querySelector('.summary');
+    const textarea = firstRow.querySelector('.note');
+    const [empId,classId] = firstRow.dataset.rowkey.split('|');
+    summary.click();
+    await wait(240);
+    if(!firstRow.classList.contains('open')) throw new Error('open failed');
+    if(textarea!==document.activeElement) throw new Error('textarea not focused');
+    textarea.value='Test note';
+    const escEvent = new KeyboardEvent('keydown',{key:'Escape'});
+    textarea.dispatchEvent(escEvent);
+    await wait(40);
+    if(firstRow.classList.contains('open')) throw new Error('close failed');
+    if((getNote(empId,classId)||'')!=='Test note') throw new Error('note not saved');
+    setNote(empId,classId,'');
+    updateMeta(firstRow,empId,classId);
+    out.push('T5 expand ok');
+  } catch(e){ out.push('T5 fail '+e.message); }
+  try {
+    const firstRow = document.querySelector('#detailHost .rowcard');
+    if(!firstRow) throw new Error('no row');
+    const photoBtn = firstRow.querySelector('.photo');
+    const [empId,classId] = firstRow.dataset.rowkey.split('|');
+    const originalPick = pickFile;
+    const originalFileToDataURL = fileToDataURL;
+    try{
+      pickFile = (cb)=>{ cb([{name:'mock'}]); };
+      fileToDataURL = ()=> 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AApEBgUo35N8AAAAASUVORK5CYII=';
+      photoBtn.click();
+      const thumbCount = firstRow.querySelectorAll('.photostrip .thumb').length;
+      if(thumbCount<1) throw new Error('photo not added');
+      setPhotos(empId,classId,[]);
+      renderPhotos(firstRow,empId,classId);
+    } finally {
+      pickFile = originalPick;
+      fileToDataURL = originalFileToDataURL;
+    }
+    out.push('T6 photo ok');
+  } catch(e){ out.push('T6 fail '+e.message); }
+  try { buildCatalog(); const rows = document.querySelectorAll('#catalogBody tr').length; if(rows<1) throw new Error('catalog empty'); out.push('T7 catalog ok'); } catch(e){ out.push('T7 fail '+e.message); }
   const pass = out.every(t=>/ ok$/.test(t));
   const badge = $('testBadge'); if(badge) badge.textContent = pass? 'Self-tests: ✓' : 'Self-tests: ⚠';
   console.log('[Training Tracker tests]', out.join(' | '));
