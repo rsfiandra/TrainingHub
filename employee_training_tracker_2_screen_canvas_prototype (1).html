@@ -138,6 +138,24 @@
     }
     .tt-grid thead th.tt-emp-col { z-index:5; background:linear-gradient(90deg,var(--tt-brand-from),var(--tt-brand-to)); }
     .tt-grid tbody th.tt-emp-col { background:#fff; min-width:var(--tt-col-emp); }
+    #tt-screen-catalog .tt-grid tbody tr { background:transparent; }
+    #tt-screen-catalog .tt-grid tbody td {
+      min-width:140px;
+      border-right:1px solid var(--tt-ring);
+    }
+    #tt-screen-catalog .tt-grid tbody tr:last-child td { border-bottom:none; }
+    #tt-screen-catalog .tt-grid td input {
+      width:100%;
+      border:1px solid var(--tt-ring);
+      border-radius:6px;
+      padding:4px 6px;
+      font:inherit;
+      background:#fff;
+    }
+    #tt-screen-catalog .tt-grid td input:focus {
+      outline:2px solid rgba(37,99,235,0.35);
+      outline-offset:1px;
+    }
     .tt-grid tbody td.tt-prog-col,
     .tt-grid thead th.tt-prog-col { min-width:var(--tt-col-prog); }
     .tt-grid tbody tr { cursor:pointer; }
@@ -178,7 +196,7 @@
     .tt-area-rows { display:flex; flex-direction:column; gap:12px; }
     .tt-rowcard {
       display:grid;
-      grid-template-columns:auto 1fr auto;
+      grid-template-columns:auto 1fr;
       align-items:center;
       gap:12px;
       padding:14px 16px;
@@ -189,7 +207,6 @@
       transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease;
     }
     .tt-rowcard:hover { border-color:#cbd5f5; box-shadow:0 10px 22px rgba(15,23,42,0.12); transform:translateY(-1px); }
-    .tt-rowcard.tt-open { border-color:#a5b4fc; }
     .tt-statusbtn {
       width:28px;
       height:28px;
@@ -204,6 +221,7 @@
       cursor:pointer;
       transition:all .2s ease;
       flex-shrink:0;
+      padding:0;
     }
     .tt-statusbtn svg { width:16px; height:16px; }
     .tt-statusbtn[aria-pressed="true"] {
@@ -225,93 +243,9 @@
       padding:0;
       color:inherit;
       font:inherit;
-      cursor:pointer;
     }
     .tt-summary .tt-title { font-weight:600; font-size:15px; color:#111827; }
     .tt-summary .tt-meta { font-size:13px; color:var(--tt-muted); }
-
-    .tt-chev {
-      background:none;
-      border:none;
-      color:var(--tt-muted);
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      cursor:pointer;
-      width:28px;
-      height:28px;
-      transition:transform .2s ease;
-    }
-    .tt-rowcard.tt-open .tt-chev { transform:rotate(90deg); color:var(--tt-accent); }
-
-    .tt-details {
-      grid-column:1/-1;
-      padding-top:12px;
-      border-top:1px solid #e5e7eb;
-      margin-top:12px;
-      overflow:hidden;
-      max-height:0;
-      opacity:0;
-      transition:max-height .24s ease,opacity .2s ease;
-    }
-    .tt-rowcard.tt-open .tt-details { max-height:600px; opacity:1; }
-    .tt-details[hidden] { display:block; max-height:0; opacity:0; padding-top:0; margin-top:0; border-top:none; }
-    .tt-note {
-      width:100%;
-      min-height:88px;
-      resize:vertical;
-      border-radius:12px;
-      border:1px solid var(--tt-ring);
-      padding:10px;
-      font:inherit;
-      line-height:1.4;
-      box-shadow:0 2px 6px rgba(15,23,42,0.05);
-      transition:border-color .2s ease,box-shadow .2s ease;
-    }
-    .tt-note:focus { border-color:#a5b4fc; box-shadow:0 4px 16px rgba(99,102,241,0.25); }
-    .tt-actions { display:flex; gap:8px; margin-top:8px; }
-    .tt-actions button {
-      padding:6px 12px;
-      border-radius:999px;
-      border:1px solid var(--tt-ring);
-      background:#fff;
-      font:inherit;
-      cursor:pointer;
-      transition:background .2s ease,border-color .2s ease,transform .2s ease;
-    }
-    .tt-actions button:hover { background:#f3f4ff; border-color:#c7d2fe; }
-    .tt-actions .tt-done {
-      background:linear-gradient(135deg,var(--tt-brand-from),var(--tt-brand-to));
-      color:#fff;
-      border:none;
-      box-shadow:0 4px 12px rgba(99,102,241,0.35);
-    }
-    .tt-actions .tt-done:hover { transform:translateY(-1px); }
-
-    .tt-photostrip { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
-    .tt-thumb {
-      position:relative;
-      width:72px;
-      height:72px;
-      border-radius:12px;
-      overflow:hidden;
-      box-shadow:0 4px 12px rgba(15,23,42,0.16);
-    }
-    .tt-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
-    .tt-thumb button {
-      position:absolute;
-      top:4px;
-      right:4px;
-      width:20px;
-      height:20px;
-      border:none;
-      border-radius:50%;
-      background:rgba(15,23,42,0.76);
-      color:#fff;
-      font-size:12px;
-      cursor:pointer;
-    }
-    .tt-thumb button:hover { background:rgba(220,38,38,0.85); }
 
     .tt-checkbox {
       display:inline-flex;
@@ -361,7 +295,7 @@
     .tt-spacer { flex:1 1 auto; }
 
     @media (max-width:720px) {
-      .tt-rowcard { grid-template-columns:auto 1fr auto; gap:10px; padding:12px; }
+      .tt-rowcard { grid-template-columns:auto 1fr; gap:10px; padding:12px; }
       .tt-statusbtn { width:26px; height:26px; }
       .tt-summary .tt-title { font-size:14px; }
       .tt-summary .tt-meta { font-size:12px; }
@@ -390,29 +324,51 @@
       ];
 
       const checkSvg = '<svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M8.2 13.4 4.8 10l1.4-1.4 2 2 5.6-5.6 1.4 1.4-7 7z"></path></svg>';
-      const chevronSvg = '<svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M7.2 3.5 5.8 4.9l6.2 6.1-6.2 6.1 1.4 1.4 7.6-7.5-7.6-7.5z"></path></svg>';
 
       const slug = (s)=> String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
       const clone = (val)=> JSON.parse(JSON.stringify(val||{}));
+      const catalogColumns = [
+        {key:'short', placeholder:'Short code'},
+        {key:'name', placeholder:'Class name'},
+        {key:'area', placeholder:'Category'},
+        {key:'group', placeholder:'Group'},
+        {key:'level', placeholder:'Level'},
+        {key:'step', placeholder:'Step'}
+      ];
 
       function enrichCatalog(list){
-        return list.map(item=>{
-          const id = slug(`${item.short||''}|${item.name||''}`);
-          let level = '';
-          const m = (item.group||'').match(/level\s*(\d+)/i);
-          if(m) level = `Level ${m[1]}`;
-          let step = '';
-          const p1 = (item.name||'').match(/part\s*(\d+)/i);
-          if(p1) step = p1[1];
+        return list.map((item, index)=>{
+          const base = {...item};
+          const fallbackId = slug(`${base.short||''}|${base.name||''}`) || `class-${index+1}`;
+          const id = base.id || fallbackId;
+          let level = base.level || '';
+          if(!level){
+            const m = (base.group||'').match(/level\s*(\d+)/i);
+            if(m) level = `Level ${m[1]}`;
+          }
+          let step = base.step || '';
           if(!step){
-            const p2 = (item.short||'').match(/part\s*(\d+)/i);
+            const p1 = (base.name||'').match(/part\s*(\d+)/i);
+            if(p1) step = p1[1];
+          }
+          if(!step){
+            const p2 = (base.short||'').match(/part\s*(\d+)/i);
             if(p2) step = p2[1];
           }
           if(!step){
-            const p3 = (item.short||'').match(/(\d+)$/);
+            const p3 = (base.short||'').match(/(\d+)$/);
             if(p3) step = p3[1];
           }
-          return {...item,id,level,step};
+          return {...base, id, level, step, __index: index};
+        });
+      }
+
+      function prepareClassList(list){
+        return (list || []).map((item, index)=>{
+          const copy = {...item};
+          const fallbackId = slug(`${copy.short||''}|${copy.name||''}`) || `class-${index+1}`;
+          copy.id = copy.id || fallbackId;
+          return copy;
         });
       }
 
@@ -637,30 +593,17 @@
           employees: [],
           classes: [],
           catalog: [],
-          completion: {},
-          notes: {},
-          photos: {}
+          completion: {}
         };
-        let openRowKey = null;
+        let customClassCounter = 0;
         let activeTab = 'overview';
         const onChange = typeof options.onChange === 'function' ? options.onChange : null;
-        const hiddenFileInput = document.createElement('input');
-        hiddenFileInput.type = 'file';
-        hiddenFileInput.accept = 'image/*';
-        hiddenFileInput.multiple = true;
-        hiddenFileInput.style.position = 'absolute';
-        hiddenFileInput.style.width = '1px';
-        hiddenFileInput.style.height = '1px';
-        hiddenFileInput.style.opacity = '0';
-        elements.app.appendChild(hiddenFileInput);
-        let pendingFileCallback = null;
 
         const usePersistence = !options || (Object.keys(options).length === 0);
 
         function loadData(){
           state.employees = clone(options.employees || defaultEmployees);
-          state.classes = clone(options.classes || defaultClasses);
-          state.catalog = enrichCatalog(state.classes);
+          state.classes = prepareClassList(clone(options.classes || defaultClasses));
           state.completion = clone(options.completions || {});
           if(usePersistence && typeof localStorage !== 'undefined'){
             try{
@@ -668,13 +611,14 @@
               if(raw){
                 const parsed = JSON.parse(raw);
                 if(parsed.completion) state.completion = parsed.completion;
-                if(parsed.notes) state.notes = parsed.notes;
-                if(parsed.photos) state.photos = parsed.photos;
+                if(parsed.classes) state.classes = prepareClassList(parsed.classes);
               }
             }catch(err){
               console.warn('TrainingTracker: failed to load saved state', err);
             }
           }
+          state.catalog = enrichCatalog(state.classes);
+          customClassCounter = state.classes.length;
         }
 
         function saveState(){
@@ -682,39 +626,12 @@
           try{
             const payload = JSON.stringify({
               completion: state.completion,
-              notes: state.notes,
-              photos: state.photos
+              classes: state.classes
             });
             localStorage.setItem(STORAGE_KEY, payload);
           }catch(err){
             console.warn('TrainingTracker: failed to persist state', err);
           }
-        }
-
-        function getNote(empId, classId){
-          return state.notes[empId]?.[classId] || '';
-        }
-        function setNote(empId, classId, value){
-          const trimmed = value.trim();
-          if(trimmed){
-            ensureBucket(state.notes, empId)[classId] = value;
-          }else if(state.notes[empId]){
-            delete state.notes[empId][classId];
-            if(Object.keys(state.notes[empId]).length === 0) delete state.notes[empId];
-          }
-          saveState();
-        }
-        function getPhotos(empId, classId){
-          return state.photos[empId]?.[classId] ? [...state.photos[empId][classId]] : [];
-        }
-        function setPhotos(empId, classId, list){
-          if(list.length){
-            ensureBucket(state.photos, empId)[classId] = list;
-          }else if(state.photos[empId]){
-            delete state.photos[empId][classId];
-            if(Object.keys(state.photos[empId]).length === 0) delete state.photos[empId];
-          }
-          saveState();
         }
 
         function setCompletion(empId, classId, value){
@@ -732,42 +649,269 @@
           buildOverview();
         }
 
-        let pickFile = (callback)=>{
-          pendingFileCallback = callback;
-          hiddenFileInput.value = '';
-          hiddenFileInput.click();
-        };
-
-        hiddenFileInput.addEventListener('change', ()=>{
-          const files = Array.from(hiddenFileInput.files || []);
-          hiddenFileInput.value = '';
-          if(pendingFileCallback){
-            pendingFileCallback(files);
-            pendingFileCallback = null;
+        function generateClassId(values){
+          const baseSlug = slug(`${values.short||''}|${values.name||''}`);
+          if(baseSlug && !state.classes.some(cls=>cls.id === baseSlug)){
+            return baseSlug;
           }
-        });
+          customClassCounter += 1;
+          return `custom-${Date.now().toString(36)}-${customClassCounter}`;
+        }
+
+
+        function collectCatalogRowValues(row){
+          if(!row) return null;
+          const values = {};
+          let hasContent = false;
+          catalogColumns.forEach(col=>{
+            const input = row.querySelector(`input[data-field="${col.key}"]`);
+            const value = (input?.value || '').trim();
+            values[col.key] = value;
+            if(value) hasContent = true;
+          });
+          return hasContent ? values : null;
+        }
+
+        function getCatalogFilterState(){
+          const filters = elements.catalogFilters;
+          return {
+            term: (filters.search.value || '').toLowerCase(),
+            cat: filters.cat.value,
+            group: filters.group.value,
+            level: filters.level.value,
+            step: filters.step.value
+          };
+        }
+
+        function passesCatalogFilters(cls, filters){
+          if(filters.cat && cls.area !== filters.cat) return false;
+          if(filters.group && cls.group !== filters.group) return false;
+          if(filters.level && cls.level !== filters.level) return false;
+          if(filters.step && String(cls.step||'') !== filters.step) return false;
+          if(filters.term){
+            const haystacks = [cls.short, cls.name];
+            const match = haystacks.some(value=> String(value||'').toLowerCase().includes(filters.term));
+            if(!match) return false;
+          }
+          return true;
+        }
+
+        function refreshAfterClassChange(rebuildCatalog=false){
+          state.catalog = enrichCatalog(state.classes);
+          buildFacetOptions();
+          saveState();
+          if(activeTab === 'overview') buildOverview();
+          if(activeTab === 'employee') renderDetail();
+          if(rebuildCatalog) buildCatalog();
+        }
+
+        function finalizeCatalogRow(row){
+          if(!row) return;
+          if(row.dataset.newRow === 'true'){
+            const values = collectCatalogRowValues(row);
+            if(!values) return;
+            const id = generateClassId(values);
+            state.classes.push({...values, id});
+            customClassCounter = state.classes.length;
+            refreshAfterClassChange(false);
+            const newIndex = state.classes.length - 1;
+            const updated = state.catalog[newIndex];
+            const filterState = getCatalogFilterState();
+            if(!passesCatalogFilters(updated, filterState)){
+              buildCatalog();
+              return;
+            }
+            delete row.dataset.newRow;
+            row.dataset.sourceIndex = String(newIndex);
+            row.dataset.id = updated.id;
+            row.removeAttribute('data-new-row');
+            catalogColumns.forEach(col=>{
+              const input = row.querySelector(`input[data-field="${col.key}"]`);
+              if(input){
+                input.dataset.sourceIndex = String(newIndex);
+                input.value = updated[col.key] || '';
+                input.removeAttribute('data-new-row');
+              }
+            });
+            const blankRow = createCatalogRow(null, true);
+            elements.catalogBody.appendChild(blankRow);
+          }else{
+            const index = Number(row.dataset.sourceIndex);
+            if(Number.isInteger(index) && state.classes[index]){
+              const target = state.classes[index];
+              catalogColumns.forEach(col=>{
+                const input = row.querySelector(`input[data-field="${col.key}"]`);
+                if(input){
+                  const trimmed = input.value.trim();
+                  target[col.key] = trimmed;
+                  input.value = trimmed;
+                }
+              });
+              refreshAfterClassChange(false);
+              const updated = state.catalog[index];
+              if(updated){
+                row.dataset.id = updated.id;
+                catalogColumns.forEach(col=>{
+                  const input = row.querySelector(`input[data-field="${col.key}"]`);
+                  if(input){
+                    const next = updated[col.key] || '';
+                    if(input.value !== next) input.value = next;
+                  }
+                });
+              }
+            }
+          }
+        }
+
+        function handleCatalogInput(){
+          // Intentionally noop; updates occur on blur.
+        }
+
+        function handleCatalogBlur(ev){
+          const input = ev.currentTarget;
+          const row = input.closest('tr');
+          if(!row) return;
+          const active = document.activeElement;
+          if(active && row.contains(active)) return;
+          finalizeCatalogRow(row);
+        }
+
+        function handleCatalogKeydown(ev){
+          const input = ev.currentTarget;
+          const row = input.closest('tr');
+          if(!row) return;
+          const colIndex = Number(input.dataset.colIndex || 0);
+          const rows = Array.from(elements.catalogBody.querySelectorAll('tr'));
+          const rowIndex = rows.indexOf(row);
+          if(rowIndex === -1) return;
+
+          const focusCell = (targetRowIndex, targetColIndex)=>{
+            if(targetRowIndex < 0 || targetRowIndex >= rows.length) return;
+            const targetRow = rows[targetRowIndex];
+            const targetInput = targetRow?.querySelector(`input[data-col-index="${targetColIndex}"]`);
+            if(targetInput){
+              targetInput.focus();
+              targetInput.select();
+            }
+          };
+
+          if(ev.key === 'ArrowRight'){
+            const atEnd = typeof input.selectionStart === 'number'
+              ? (input.selectionStart === input.value.length && input.selectionEnd === input.value.length)
+              : true;
+            if(!atEnd) return;
+            ev.preventDefault();
+            let nextCol = colIndex + 1;
+            let targetRowIndex = rowIndex;
+            if(nextCol >= catalogColumns.length){
+              nextCol = 0;
+              targetRowIndex = Math.min(rowIndex + 1, rows.length - 1);
+            }
+            focusCell(targetRowIndex, nextCol);
+          }else if(ev.key === 'ArrowLeft'){
+            const atStart = typeof input.selectionStart === 'number'
+              ? (input.selectionStart === 0 && input.selectionEnd === 0)
+              : true;
+            if(!atStart) return;
+            ev.preventDefault();
+            let prevCol = colIndex - 1;
+            let targetRowIndex = rowIndex;
+            if(prevCol < 0){
+              prevCol = catalogColumns.length - 1;
+              targetRowIndex = Math.max(rowIndex - 1, 0);
+            }
+            focusCell(targetRowIndex, prevCol);
+          }else if(ev.key === 'ArrowDown'){
+            ev.preventDefault();
+            focusCell(Math.min(rowIndex + 1, rows.length - 1), colIndex);
+          }else if(ev.key === 'ArrowUp'){
+            ev.preventDefault();
+            focusCell(Math.max(rowIndex - 1, 0), colIndex);
+          }
+        }
+
+        function createCatalogRow(data, isNew=false){
+          const tr = document.createElement('tr');
+          if(isNew){
+            tr.dataset.newRow = 'true';
+          }else if(data){
+            tr.dataset.sourceIndex = String(data.__index);
+            tr.dataset.id = data.id;
+          }
+          catalogColumns.forEach((col, colIndex)=>{
+            const td = document.createElement('td');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.autocomplete = 'off';
+            input.spellcheck = false;
+            input.value = data ? (data[col.key] || '') : '';
+            if(isNew && col.placeholder) input.placeholder = col.placeholder;
+            input.dataset.field = col.key;
+            input.dataset.colIndex = String(colIndex);
+            if(!isNew && data){
+              input.dataset.sourceIndex = String(data.__index);
+            }else{
+              input.dataset.newRow = 'true';
+            }
+            input.addEventListener('keydown', handleCatalogKeydown);
+            input.addEventListener('input', handleCatalogInput);
+            input.addEventListener('blur', handleCatalogBlur);
+            input.addEventListener('focus', ()=>{
+              requestAnimationFrame(()=>input.select());
+            });
+            td.appendChild(input);
+            tr.appendChild(td);
+          });
+          return tr;
+        }
 
         function clearSelect(select){
           while(select.firstChild) select.removeChild(select.firstChild);
         }
 
-        function setSelectOptions(select, optionsList, includeAll=true){
-          clearSelect(select);
-          if(includeAll){
-            const opt = document.createElement('option');
-            opt.value = '';
-            opt.textContent = 'All';
-            select.appendChild(opt);
-          }
-          optionsList.forEach(value=>{
-            const opt = document.createElement('option');
-            opt.value = value;
-            opt.textContent = value;
-            select.appendChild(opt);
-          });
+      function setSelectOptions(select, optionsList, includeAll=true){
+        clearSelect(select);
+        if(includeAll){
+          const opt = document.createElement('option');
+          opt.value = '';
+          opt.textContent = 'All';
+          select.appendChild(opt);
         }
+        optionsList.forEach(value=>{
+          const opt = document.createElement('option');
+          opt.value = value;
+          opt.textContent = value;
+          select.appendChild(opt);
+        });
+      }
+
+      function restoreSelectValue(select, value){
+        if(!select) return;
+        const options = Array.from(select.options || []);
+        if(value && options.some(opt=>opt.value === value)){
+          select.value = value;
+        }else if(value === ''){
+          select.value = '';
+        }
+      }
 
         function buildFacetOptions(){
+          const prev = {
+            classId: elements.classFilter.value,
+            overviewCat: elements.catFilter.value,
+            overviewGroup: elements.groupFilter.value,
+            overviewLevel: elements.levelFilter.value,
+            overviewStep: elements.stepFilter.value,
+            empCat: elements.empFilters.empCat.value,
+            empGroup: elements.empFilters.empGroup.value,
+            empLevel: elements.empFilters.empLevel.value,
+            empStep: elements.empFilters.empStep.value,
+            catalogCat: elements.catalogFilters.cat.value,
+            catalogGroup: elements.catalogFilters.group.value,
+            catalogLevel: elements.catalogFilters.level.value,
+            catalogStep: elements.catalogFilters.step.value
+          };
+
           const cats = uniqueSorted(state.catalog.map(c=>c.area||''));
           const groups = uniqueSorted(state.catalog.map(c=>c.group||''));
           const levels = uniqueSorted(state.catalog.map(c=>c.level||''));
@@ -785,23 +929,36 @@
             opt.title = cls.name;
             elements.classFilter.appendChild(opt);
           });
+          restoreSelectValue(elements.classFilter, prev.classId);
 
           setSelectOptions(elements.catFilter, cats, true);
+          restoreSelectValue(elements.catFilter, prev.overviewCat);
           setSelectOptions(elements.groupFilter, groups, true);
+          restoreSelectValue(elements.groupFilter, prev.overviewGroup);
           setSelectOptions(elements.levelFilter, levels, true);
+          restoreSelectValue(elements.levelFilter, prev.overviewLevel);
           setSelectOptions(elements.stepFilter, steps, true);
+          restoreSelectValue(elements.stepFilter, prev.overviewStep);
 
           const empFilters = elements.empFilters;
           setSelectOptions(empFilters.empCat, cats, true);
+          restoreSelectValue(empFilters.empCat, prev.empCat);
           setSelectOptions(empFilters.empGroup, groups, true);
+          restoreSelectValue(empFilters.empGroup, prev.empGroup);
           setSelectOptions(empFilters.empLevel, levels, true);
+          restoreSelectValue(empFilters.empLevel, prev.empLevel);
           setSelectOptions(empFilters.empStep, steps, true);
+          restoreSelectValue(empFilters.empStep, prev.empStep);
 
           const catalogFilters = elements.catalogFilters;
           setSelectOptions(catalogFilters.cat, cats, true);
+          restoreSelectValue(catalogFilters.cat, prev.catalogCat);
           setSelectOptions(catalogFilters.group, groups, true);
+          restoreSelectValue(catalogFilters.group, prev.catalogGroup);
           setSelectOptions(catalogFilters.level, levels, true);
+          restoreSelectValue(catalogFilters.level, prev.catalogLevel);
           setSelectOptions(catalogFilters.step, steps, true);
+          restoreSelectValue(catalogFilters.step, prev.catalogStep);
         }
 
         function buildEmpPicker(){
@@ -1004,15 +1161,6 @@
           if(which === 'catalog') buildCatalog();
         }
 
-        function computeMetaText(noteText, photoCount){
-          const hasContent = !!noteText.trim() || photoCount > 0;
-          let label = hasContent ? 'Edit comment' : 'Add comment';
-          if(photoCount > 0){
-            label += ` • ${photoCount} photo${photoCount>1?'s':''}`;
-          }
-          return label;
-        }
-
         function updateStatusButton(row, empId, classId){
           const btn = row.querySelector('.tt-statusbtn');
           const done = !!(state.completion[empId]?.[classId]);
@@ -1023,73 +1171,8 @@
 
         function updateMeta(row, empId, classId){
           const meta = row.querySelector('.tt-summary .tt-meta');
-          const note = getNote(empId, classId);
-          const photoCount = getPhotos(empId, classId).length;
-          meta.textContent = computeMetaText(note, photoCount);
-        }
-
-        function renderPhotos(row, empId, classId){
-          const strip = row.querySelector('.tt-photostrip');
-          strip.textContent = '';
-          const list = getPhotos(empId, classId);
-          list.forEach((src, idx)=>{
-            const thumb = document.createElement('div');
-            thumb.className = 'tt-thumb';
-            const img = document.createElement('img');
-            img.src = src;
-            img.alt = `Training photo ${idx+1}`;
-            const removeBtn = document.createElement('button');
-            removeBtn.type = 'button';
-            removeBtn.setAttribute('aria-label', 'Remove photo');
-            removeBtn.textContent = '×';
-            removeBtn.addEventListener('click', ()=>{
-              const current = getPhotos(empId, classId);
-              current.splice(idx,1);
-              setPhotos(empId, classId, current);
-              renderPhotos(row, empId, classId);
-              updateMeta(row, empId, classId);
-            });
-            thumb.append(img, removeBtn);
-            strip.appendChild(thumb);
-          });
-        }
-
-        function commitNote(row){
-          const textarea = row.querySelector('.tt-note');
-          const [empId, classId] = row.dataset.rowkey.split('|');
-          setNote(empId, classId, textarea.value);
-          updateMeta(row, empId, classId);
-        }
-
-        function closeOpenRow(){
-          if(!openRowKey) return;
-          const row = elements.detailHost.querySelector(`.tt-rowcard[data-rowkey="${openRowKey}"]`);
-          if(row) closeRow(row, true);
-        }
-
-        function openRow(row){
-          closeOpenRow();
-          row.classList.add('tt-open');
-          const details = row.querySelector('.tt-details');
-          details.hidden = false;
-          openRowKey = row.dataset.rowkey;
-          const summary = row.querySelector('.tt-summary');
-          if(summary) summary.setAttribute('aria-expanded','true');
-          const textarea = row.querySelector('.tt-note');
-          requestAnimationFrame(()=>textarea.focus());
-        }
-
-        function closeRow(row, keepFocus=false){
-          commitNote(row);
-          row.classList.remove('tt-open');
-          const details = row.querySelector('.tt-details');
-          details.hidden = true;
-          if(openRowKey === row.dataset.rowkey) openRowKey = null;
-          const summary = row.querySelector('.tt-summary');
-          if(summary) summary.setAttribute('aria-expanded','false');
-          if(!keepFocus && summary){
-            summary.focus();
-          }
+          const done = !!(state.completion[empId]?.[classId]);
+          meta.textContent = done ? 'Completed' : 'Not completed';
         }
 
         function buildRowCard(empId, cls){
@@ -1103,51 +1186,19 @@
           statusBtn.setAttribute('aria-pressed','false');
           statusBtn.title = 'Mark complete';
 
-          const summaryBtn = document.createElement('button');
-          summaryBtn.className = 'tt-summary';
-          summaryBtn.type = 'button';
-          summaryBtn.setAttribute('aria-expanded','false');
+          const summaryWrap = document.createElement('div');
+          summaryWrap.className = 'tt-summary';
           const title = document.createElement('div');
           title.className = 'tt-title';
           title.textContent = cls.name;
           const meta = document.createElement('div');
           meta.className = 'tt-meta';
-          meta.textContent = 'Add comment';
-          summaryBtn.append(title, meta);
+          summaryWrap.append(title, meta);
 
-          const chevBtn = document.createElement('button');
-          chevBtn.className = 'tt-chev';
-          chevBtn.type = 'button';
-          chevBtn.setAttribute('aria-label','Expand');
-          chevBtn.innerHTML = chevronSvg;
+          row.append(statusBtn, summaryWrap);
 
-          const details = document.createElement('div');
-          details.className = 'tt-details';
-          details.hidden = true;
-          const textarea = document.createElement('textarea');
-          textarea.className = 'tt-note';
-          textarea.placeholder = 'Add comment (optional)';
-          const actions = document.createElement('div');
-          actions.className = 'tt-actions';
-          const doneBtn = document.createElement('button');
-          doneBtn.className = 'tt-done';
-          doneBtn.type = 'button';
-          doneBtn.textContent = 'Done';
-          const photoBtn = document.createElement('button');
-          photoBtn.className = 'tt-photo';
-          photoBtn.type = 'button';
-          photoBtn.textContent = 'Add Photo';
-          actions.append(doneBtn, photoBtn);
-          const photoStrip = document.createElement('div');
-          photoStrip.className = 'tt-photostrip';
-          details.append(textarea, actions, photoStrip);
-
-          row.append(statusBtn, summaryBtn, chevBtn, details);
-
-          textarea.value = getNote(empId, cls.id);
           updateStatusButton(row, empId, cls.id);
           updateMeta(row, empId, cls.id);
-          renderPhotos(row, empId, cls.id);
 
           statusBtn.addEventListener('click', ev=>{
             ev.preventDefault();
@@ -1156,59 +1207,8 @@
             updateMeta(row, empId, cls.id);
           });
 
-          const toggleRow = ()=>{
-            const isOpen = row.classList.contains('tt-open');
-            if(isOpen){
-              closeRow(row);
-            }else{
-              openRow(row);
-            }
-            summaryBtn.setAttribute('aria-expanded', row.classList.contains('tt-open') ? 'true' : 'false');
-          };
-
-          summaryBtn.addEventListener('click', ev=>{ ev.preventDefault(); toggleRow(); });
-          chevBtn.addEventListener('click', ev=>{ ev.preventDefault(); toggleRow(); });
-
-          textarea.addEventListener('blur', ()=>commitNote(row));
-          textarea.addEventListener('keydown', ev=>{
-            if((ev.ctrlKey || ev.metaKey) && ev.key === 'Enter'){
-              ev.preventDefault();
-              commitNote(row);
-              closeRow(row);
-            }else if(ev.key === 'Escape'){
-              ev.preventDefault();
-              closeRow(row, true);
-            }
-          });
-
-          doneBtn.addEventListener('click', ()=>{ commitNote(row); closeRow(row); });
-
-          photoBtn.addEventListener('click', ev=>{
-            ev.preventDefault();
-            pickFile(async files=>{
-              if(!files || files.length === 0) return;
-              const existing = getPhotos(empId, cls.id);
-              for(const file of files){
-                const dataUrl = await fileToDataURL(file);
-                if(dataUrl) existing.push(dataUrl);
-              }
-              setPhotos(empId, cls.id, existing);
-              renderPhotos(row, empId, cls.id);
-              updateMeta(row, empId, cls.id);
-            });
-          });
-
           return row;
         }
-
-        let fileToDataURL = (file)=>{
-          return new Promise(resolve=>{
-            const reader = new FileReader();
-            reader.onload = ()=>resolve(reader.result);
-            reader.onerror = ()=>resolve('');
-            reader.readAsDataURL(file);
-          });
-        };
 
         function renderDetail(){
           const empId = elements.empFilters.empSel.value || state.employees[0]?.id;
@@ -1230,7 +1230,6 @@
             empty.className = 'tt-muted';
             empty.textContent = 'No classes match the current filters.';
             host.appendChild(empty);
-            openRowKey = null;
             return;
           }
 
@@ -1240,9 +1239,6 @@
             if(!byArea.has(area)) byArea.set(area, []);
             byArea.get(area).push(cls);
           });
-
-          const previousOpen = openRowKey;
-          openRowKey = null;
 
           byArea.forEach((items, area)=>{
             const block = document.createElement('div');
@@ -1260,36 +1256,20 @@
             host.appendChild(block);
           });
 
-          if(previousOpen){
-            const reopen = host.querySelector(`.tt-rowcard[data-rowkey="${previousOpen}"]`);
-            if(reopen) openRow(reopen);
-          }
         }
 
         function buildCatalog(){
-          const filters = elements.catalogFilters;
-          const term = filters.search.value?.toLowerCase() || '';
-          const cat = filters.cat.value;
-          const group = filters.group.value;
-          const level = filters.level.value;
-          const step = filters.step.value;
+          const filters = getCatalogFilterState();
           const list = state.catalog
-            .filter(c=> (!cat || c.area===cat) && (!group || c.group===group) && (!level || c.level===level) && (!step || String(c.step)===String(step)))
-            .filter(c=> !term || [c.short, c.name].some(x=> String(x||'').toLowerCase().includes(term)))
+            .filter(cls=>passesCatalogFilters(cls, filters))
             .sort((a,b)=> a.name.localeCompare(b.name));
+
           elements.catalogBody.textContent = '';
           const frag = document.createDocumentFragment();
-          list.forEach(c=>{
-            const tr = document.createElement('tr');
-            tr.dataset.id = c.id;
-            const cells = [c.short, c.name, c.area||'', c.group||'', c.level||'', c.step||''];
-            cells.forEach(text=>{
-              const td = document.createElement('td');
-              td.textContent = text;
-              tr.appendChild(td);
-            });
-            frag.appendChild(tr);
+          list.forEach(cls=>{
+            frag.appendChild(createCatalogRow(cls, false));
           });
+          frag.appendChild(createCatalogRow(null, true));
           elements.catalogBody.appendChild(frag);
         }
 
@@ -1351,49 +1331,20 @@
                 setTab('overview');
               }
             },
-            { name:'T8 expand', fn: async ()=>{
-                setTab('employee');
-                const firstRow = elements.detailHost.querySelector('.tt-rowcard');
-                if(!firstRow) throw new Error('no row');
-                const summary = firstRow.querySelector('.tt-summary');
-                const textarea = firstRow.querySelector('.tt-note');
-                const [empId, classId] = firstRow.dataset.rowkey.split('|');
-                summary.click();
-                await wait(240);
-                if(!firstRow.classList.contains('tt-open')) throw new Error('open failed');
-                if(document.activeElement !== textarea) throw new Error('textarea not focused');
-                textarea.value = 'Test note';
-                const escEvent = new KeyboardEvent('keydown',{key:'Escape'});
-                textarea.dispatchEvent(escEvent);
-                await wait(40);
-                if(firstRow.classList.contains('tt-open')) throw new Error('close failed');
-                if((getNote(empId,classId)||'') !== 'Test note') throw new Error('note not saved');
-                setNote(empId,classId,'');
-                updateMeta(firstRow,empId,classId);
+            { name:'T8 catalog editable', fn: async ()=>{
+                buildCatalog();
+                const firstInput = elements.catalogBody.querySelector('tr input');
+                if(!firstInput) throw new Error('no catalog input');
+                if(firstInput.tagName.toLowerCase() !== 'input') throw new Error('catalog not editable');
               }
             },
-            { name:'T9 photo', fn: async ()=>{
-                const firstRow = elements.detailHost.querySelector('.tt-rowcard');
-                if(!firstRow) throw new Error('no row');
-                const photoBtn = firstRow.querySelector('.tt-photo');
-                const [empId, classId] = firstRow.dataset.rowkey.split('|');
-                const originalPick = pickFile;
-                const originalFileToDataURL = fileToDataURL;
-                try{
-                  pickFile = (cb)=>cb([{name:'mock'}]);
-                  fileToDataURL = async ()=> 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AApEBgUo35N8AAAAASUVORK5CYII=';
-                  photoBtn.click();
-                  const count = firstRow.querySelectorAll('.tt-photostrip .tt-thumb').length;
-                  if(count < 1) throw new Error('photo not added');
-                  setPhotos(empId, classId, []);
-                  renderPhotos(firstRow, empId, classId);
-                }finally{
-                  pickFile = originalPick;
-                  fileToDataURL = originalFileToDataURL;
-                }
+            { name:'T9 new row', fn: async ()=>{
+                buildCatalog();
+                const lastRow = elements.catalogBody.querySelector('tr:last-child');
+                if(!lastRow || lastRow.dataset.newRow !== 'true') throw new Error('missing new row');
               }
             },
-            { name:'T10 catalog', fn: async ()=>{
+            { name:'T10 catalog size', fn: async ()=>{
                 buildCatalog();
                 const rows = elements.catalogBody.querySelectorAll('tr').length;
                 if(rows < 1) throw new Error('catalog empty');
@@ -1456,7 +1407,6 @@
         return {
           destroy(){
             listeners.forEach(({target,type,handler})=>target.removeEventListener(type,handler));
-            hiddenFileInput.remove();
             if(elements.app.parentNode) elements.app.parentNode.removeChild(elements.app);
           },
           getState(){
@@ -1469,15 +1419,14 @@
           setData(payload){
             if(payload.employees) state.employees = clone(payload.employees);
             if(payload.classes){
-              state.classes = clone(payload.classes);
-              state.catalog = enrichCatalog(state.classes);
+              state.classes = prepareClassList(clone(payload.classes));
+              customClassCounter = state.classes.length;
             }
             if(payload.completions) state.completion = clone(payload.completions);
+            refreshAfterClassChange(true);
             buildEmpPicker();
-            buildFacetOptions();
             buildOverview();
             renderDetail();
-            buildCatalog();
           },
           setTab,
           elements,
