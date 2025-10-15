@@ -145,12 +145,14 @@
     .tt-grid table {
       border-collapse:separate;
       border-spacing:0;
+      width:100%;
       min-width:100%;
+    }
+    #tt-overviewTbl {
       width:max-content;
+      min-width:100%;
     }
     .tt-grid thead th {
-      position:sticky;
-      top:0;
       background:linear-gradient(90deg,var(--tt-brand-from),var(--tt-brand-to));
       color:#fff;
       text-align:left;
@@ -158,11 +160,20 @@
       font-weight:700;
       border-right:1px solid rgba(255,255,255,0.25);
       box-shadow:0 1px 0 rgba(17,24,39,0.08);
+    }
+    #tt-overviewTbl thead th {
+      position:sticky;
+      top:0;
       z-index:3;
+    }
+    #tt-overviewTbl thead th,
+    #tt-overviewTbl tbody td {
       min-width:var(--tt-col-class);
     }
-    .tt-grid thead th.tt-emp-col { min-width:var(--tt-col-emp); }
-    .tt-grid thead th.tt-prog-col { min-width:var(--tt-col-prog); }
+    #tt-overviewTbl thead th.tt-emp-col,
+    #tt-overviewTbl tbody th.tt-emp-col { min-width:var(--tt-col-emp); }
+    #tt-overviewTbl thead th.tt-prog-col,
+    #tt-overviewTbl tbody td.tt-prog-col { min-width:var(--tt-col-prog); }
     .tt-grid tbody tr:nth-child(odd) { background:#fff; }
     .tt-grid tbody tr:nth-child(even) { background:#f8fafc; }
     .tt-grid tbody th,
@@ -171,22 +182,21 @@
       border-right:1px solid var(--tt-ring);
       border-bottom:1px solid var(--tt-ring);
       vertical-align:top;
-      min-width:var(--tt-col-class);
     }
-    .tt-grid tbody th.tt-emp-col,
-    .tt-grid thead th.tt-emp-col {
+    #tt-overviewTbl thead th.tt-emp-col,
+    #tt-overviewTbl tbody th.tt-emp-col {
       position:sticky;
       left:0;
       z-index:5;
     }
-    .tt-grid thead th.tt-emp-col {
+    #tt-overviewTbl thead th.tt-emp-col {
       z-index:6;
       background:linear-gradient(90deg,var(--tt-brand-from),var(--tt-brand-to));
       box-shadow:2px 0 0 rgba(37,99,235,0.25);
     }
-    .tt-grid tbody th.tt-emp-col {
+    #tt-overviewTbl tbody th.tt-emp-col {
       background:#fff;
-      min-width:var(--tt-col-emp);
+      text-align:left;
       box-shadow:2px 0 0 rgba(148,163,184,0.35);
     }
     #tt-screen-catalog .tt-grid tbody tr { background:transparent; }
