@@ -1,0 +1,3585 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Training Tracker</title>
+  <style>
+    .tt-app {
+      --tt-brand-from:#2563eb; --tt-brand-to:#7c3aed;
+      --tt-surface:#f6f7fb; --tt-panel:#ffffff; --tt-text:#111827; --tt-muted:#6b7280; --tt-ring:#e5e7eb;
+      --tt-ok:#16a34a; --tt-bad:#dc2626; --tt-accent:#f97316;
+      --tt-col-emp:240px; --tt-col-class:220px; --tt-col-prog:160px;
+      color:var(--tt-text);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Noto Sans",sans-serif;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+      padding:16px;
+      background:var(--tt-surface);
+    }
+    .tt-app * { box-sizing:border-box; }
+    .tt-app a { color:inherit; }
+
+    .tt-panel {
+      background:var(--tt-panel);
+      border:1px solid var(--tt-ring);
+      border-radius:12px;
+      box-shadow:0 2px 10px rgba(0,0,0,0.06);
+      padding:12px;
+    }
+
+    .tt-header-panel {
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      gap:12px;
+    }
+    .tt-header-panel h1 {
+      margin:0;
+      font-size:18px;
+      font-weight:700;
+    }
+    .tt-header-info {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .tt-import {
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+      gap:6px;
+      min-width:220px;
+    }
+    .tt-import-btn {
+      border-radius:999px;
+      border:none;
+      padding:6px 14px;
+      font:inherit;
+      color:#fff;
+      cursor:pointer;
+      background:linear-gradient(90deg,var(--tt-brand-from),var(--tt-brand-to));
+      box-shadow:0 1px 2px rgba(0,0,0,0.18);
+      transition:transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    .tt-import-btn:hover,
+    .tt-import-btn:focus-visible {
+      outline:none;
+      transform:translateY(-1px);
+      box-shadow:0 3px 8px rgba(37,99,235,0.28);
+    }
+    .tt-import-status {
+      font-size:12px;
+      color:var(--tt-muted);
+      min-height:16px;
+      text-align:right;
+    }
+    .tt-import-status.tt-import-error {
+      color:var(--tt-bad);
+    }
+    .tt-badge {
+      font-size:11px;
+      padding:2px 6px;
+      border-radius:999px;
+      background:#ecfeff;
+      color:#155e75;
+      border:1px solid #a5f3fc;
+    }
+
+    .tt-pilltabs {
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .tt-pilltab {
+      border:1px solid var(--tt-ring);
+      background:#fff;
+      color:var(--tt-text);
+      padding:6px 12px;
+      border-radius:999px;
+      cursor:pointer;
+      font:inherit;
+    }
+    .tt-pilltab[aria-current="page"] {
+      background:linear-gradient(90deg,var(--tt-brand-from),var(--tt-brand-to));
+      color:#fff;
+      border-color:transparent;
+    }
+
+    .tt-row {
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:center;
+      margin:8px 0;
+    }
+    .tt-row label {
+      display:flex;
+      flex-direction:column;
+      font-size:13px;
+      gap:4px;
+    }
+    .tt-row select,
+    .tt-row input[type="text"] {
+      padding:6px 8px;
+      border:1px solid var(--tt-ring);
+      border-radius:8px;
+      font:inherit;
+    }
+    .tt-muted { color:var(--tt-muted); }
+    .tt-hidden { display:none!important; }
+
+    .tt-grid {
+      position:relative;
+      overflow:auto;
+      width:100%;
+      max-width:100%;
+      border:1px solid var(--tt-ring);
+      border-radius:12px;
+      background:#fff;
+      -webkit-overflow-scrolling:touch;
+    }
+    .tt-grid table {
+      border-collapse:separate;
+      border-spacing:0;
+      width:100%;
+      min-width:100%;
+    }
+    #tt-overviewTbl {
+      width:max-content;
+      min-width:100%;
+    }
+    .tt-grid thead th {
+      background:linear-gradient(90deg,var(--tt-brand-from),var(--tt-brand-to));
+      color:#fff;
+      text-align:left;
+      padding:6px 8px;
+      font-weight:700;
+      border-right:1px solid rgba(255,255,255,0.25);
+      box-shadow:0 1px 0 rgba(17,24,39,0.08);
+    }
+    #tt-overviewTbl thead th {
+      position:sticky;
+      top:0;
+      z-index:3;
+    }
+    #tt-overviewTbl thead th,
+    #tt-overviewTbl tbody td {
+      min-width:var(--tt-col-class);
+    }
+    #tt-overviewTbl thead th.tt-emp-col,
+    #tt-overviewTbl tbody th.tt-emp-col { min-width:var(--tt-col-emp); }
+    #tt-overviewTbl thead th.tt-prog-col,
+    #tt-overviewTbl tbody td.tt-prog-col { min-width:var(--tt-col-prog); }
+    .tt-grid tbody tr:nth-child(odd) { background:#fff; }
+    .tt-grid tbody tr:nth-child(even) { background:#f8fafc; }
+    .tt-grid tbody th,
+    .tt-grid tbody td {
+      padding:6px 8px;
+      border-right:1px solid var(--tt-ring);
+      border-bottom:1px solid var(--tt-ring);
+      vertical-align:top;
+    }
+    #tt-overviewTbl thead th.tt-emp-col,
+    #tt-overviewTbl tbody th.tt-emp-col {
+      position:sticky;
+      left:0;
+      z-index:5;
+    }
+    #tt-overviewTbl thead th.tt-emp-col {
+      z-index:6;
+      background:linear-gradient(90deg,var(--tt-brand-from),var(--tt-brand-to));
+      box-shadow:2px 0 0 rgba(37,99,235,0.25);
+    }
+    #tt-overviewTbl tbody th.tt-emp-col {
+      background:#fff;
+      text-align:left;
+      box-shadow:2px 0 0 rgba(148,163,184,0.35);
+    }
+    #tt-screen-catalog .tt-grid tbody tr { background:transparent; }
+    #tt-screen-catalog .tt-grid tbody td {
+      min-width:140px;
+      border-right:1px solid var(--tt-ring);
+    }
+    #tt-screen-catalog .tt-grid tbody tr:last-child td { border-bottom:none; }
+    #tt-screen-catalog .tt-grid td input {
+      width:100%;
+      border:1px solid var(--tt-ring);
+      border-radius:6px;
+      padding:4px 6px;
+      font:inherit;
+      background:#fff;
+    }
+    #tt-screen-catalog .tt-grid td input:focus {
+      outline:2px solid rgba(37,99,235,0.35);
+      outline-offset:1px;
+    }
+    .tt-grid tbody td.tt-prog-col,
+    .tt-grid thead th.tt-prog-col { min-width:var(--tt-col-prog); }
+    .tt-grid tbody tr { cursor:pointer; }
+    .tt-grid tbody tr:focus-visible { outline:2px solid var(--tt-brand-from); outline-offset:-2px; }
+
+    .tt-status-ok { color:var(--tt-ok); font-weight:700; }
+    .tt-status-miss { color:var(--tt-bad); font-weight:700; }
+    .tt-progress {
+      height:10px;
+      background:#e5e7eb;
+      border-radius:999px;
+      overflow:hidden;
+      margin-bottom:4px;
+    }
+    .tt-progress span {
+      display:block;
+      height:100%;
+      background:linear-gradient(90deg,var(--tt-brand-from),var(--tt-brand-to));
+    }
+
+    .tt-empty {
+      padding:24px;
+      text-align:center;
+      color:var(--tt-muted);
+    }
+
+    /* Employee detail cards */
+    .tt-area-block { margin:12px 0 20px; }
+    .tt-area-title {
+      color:var(--tt-accent);
+      font-weight:800;
+      font-size:18px;
+      margin:0 0 8px 0;
+      border-bottom:2px solid var(--tt-accent);
+      display:inline-block;
+      padding-bottom:2px;
+    }
+    .tt-area-rows {
+      display:grid;
+      gap:12px;
+      grid-template-columns:1fr;
+    }
+    @media (min-width:720px) {
+      .tt-area-rows { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+    }
+    @media (min-width:1080px) {
+      .tt-area-rows { grid-template-columns:repeat(3, minmax(0, 1fr)); }
+    }
+    .tt-rowcard {
+      display:grid;
+      grid-template-columns:auto 1fr;
+      align-items:center;
+      gap:12px;
+      padding:14px 16px;
+      border:1px solid var(--tt-ring);
+      border-radius:14px;
+      background:#fff;
+      box-shadow:0 6px 16px rgba(15,23,42,0.06);
+      transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease;
+    }
+    .tt-rowcard:hover { border-color:#cbd5f5; box-shadow:0 10px 22px rgba(15,23,42,0.12); transform:translateY(-1px); }
+    .tt-statusbtn {
+      width:28px;
+      height:28px;
+      border-radius:8px;
+      border:2px solid var(--tt-accent);
+      background:transparent;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      color:var(--tt-accent);
+      font-weight:700;
+      cursor:pointer;
+      transition:all .2s ease;
+      flex-shrink:0;
+      padding:0;
+    }
+    .tt-statusbtn svg { width:16px; height:16px; }
+    .tt-statusbtn[aria-pressed="true"] {
+      background:linear-gradient(135deg,var(--tt-brand-from),var(--tt-brand-to));
+      border-color:transparent;
+      color:#fff;
+      box-shadow:0 0 0 1px rgba(255,255,255,0.4) inset;
+    }
+    .tt-statusbtn:focus-visible { outline:3px solid rgba(59,130,246,0.35); outline-offset:2px; }
+
+    .tt-summary {
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      gap:4px;
+      background:none;
+      border:none;
+      text-align:left;
+      padding:0;
+      color:inherit;
+      font:inherit;
+    }
+    .tt-summary .tt-title { font-weight:600; font-size:15px; color:#111827; }
+    .tt-summary .tt-meta { font-size:13px; color:var(--tt-muted); }
+
+    .tt-checkbox {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .tt-checkbox input {
+      position:absolute;
+      opacity:0;
+      width:1px;
+      height:1px;
+    }
+    .tt-box {
+      width:18px;
+      height:18px;
+      border:3px solid var(--tt-accent);
+      border-radius:2px;
+      display:inline-block;
+      position:relative;
+      background:#fff;
+    }
+    .tt-checkbox input:checked + .tt-box {
+      background:var(--tt-accent);
+      border-color:var(--tt-accent);
+    }
+    .tt-checkbox input:checked + .tt-box::after {
+      content:"";
+      position:absolute;
+      left:3px;
+      top:-1px;
+      width:8px;
+      height:14px;
+      border-right:3px solid #fff;
+      border-bottom:3px solid #fff;
+      transform:rotate(45deg);
+    }
+    .tt-sig-row { align-items:flex-end; gap:16px; }
+    .tt-sigline {
+      border:none;
+      border-bottom:2px solid #111827;
+      background:transparent;
+      min-width:220px;
+      padding:4px 6px;
+    }
+    .tt-spacer { flex:1 1 auto; }
+
+    @media (max-width:720px) {
+      .tt-rowcard { grid-template-columns:auto 1fr; gap:10px; padding:12px; }
+      .tt-statusbtn { width:26px; height:26px; }
+      .tt-summary .tt-title { font-size:14px; }
+      .tt-summary .tt-meta { font-size:12px; }
+      .tt-import { align-items:flex-start; width:100%; }
+      .tt-import-status { text-align:left; }
+    }
+  </style>
+</head>
+<body>
+  <div id="tt-root"></div>
+  <script>
+window.TRAINING_TRACKER_COURSES = [
+  {
+    "short": "Unlimited Leadership",
+    "name": "Regal Unlimited - Leadership",
+    "area": "Pre-Board Courses",
+    "categoryIndex": 2,
+    "group": "Leadership",
+    "level": "Other"
+  },
+  {
+    "short": "Unlimited Staff",
+    "name": "Regal Unlimited - Team Member",
+    "area": "Pre-Board Courses",
+    "categoryIndex": 2,
+    "group": "Staff",
+    "level": "Other"
+  },
+  {
+    "short": "RBS",
+    "name": "Legal Focus: Alcohol Sales and Misuse or Responsible Beverage Server",
+    "area": "Additional Courses",
+    "categoryIndex": 11,
+    "group": "All",
+    "level": "Level 1"
+  },
+  {
+    "short": "CA RBS",
+    "name": "California Responsible Beverage Server",
+    "area": "Additional Courses",
+    "categoryIndex": 11,
+    "group": "All",
+    "level": "Level 1"
+  },
+  {
+    "short": "Leadership Cash Handling",
+    "name": "Leadership Cash Handling",
+    "area": "Vista Back Office",
+    "categoryIndex": 4,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Fire Safety",
+    "name": "Fire Safety",
+    "area": "Compliance",
+    "categoryIndex": 0,
+    "group": "All",
+    "level": "Level 1"
+  },
+  {
+    "short": "ADA Leadership",
+    "name": "Assisting Guests with Disabilities - Leadership",
+    "area": "Post-Hire Basics",
+    "categoryIndex": 3,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "ADA Staff",
+    "name": "Assisting Guests with Disabilities - Team Member",
+    "area": "Post-Hire Basics",
+    "categoryIndex": 3,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "CC-DA-ALD",
+    "name": "Closed Captioning, Descriptive Audio, and Assisted Listening Devices",
+    "area": "Post-Hire Basics",
+    "categoryIndex": 3,
+    "group": "All",
+    "level": "Level 1"
+  },
+  {
+    "short": "Anti-Harassment",
+    "name": "Anti-Harassment - State - Supervisory or Non-Supervisory",
+    "area": "Compliance",
+    "categoryIndex": 0,
+    "group": "All",
+    "level": "Level 1"
+  },
+  {
+    "short": "Anti-Harassment NY/IL",
+    "name": "Anti-Harassment - IL or NY - Supervisory or Non-Supervisory",
+    "area": "Compliance",
+    "categoryIndex": 0,
+    "group": "All",
+    "level": "Level 1"
+  },
+  {
+    "short": "Intro to FMLA",
+    "name": "Intro to Family Medical Leave Act (FMLA)",
+    "area": "Human Resources",
+    "categoryIndex": 8,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Regal Policy Guide",
+    "name": "Regal Policy Guide Acknowledgement/Walkthrough",
+    "area": "Policy Acknowledgement",
+    "categoryIndex": 1,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Gift Card Fraud",
+    "name": "Gift Card Fraud Awareness and Prevention",
+    "area": "Post-Hire Basics",
+    "categoryIndex": 3,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Reporting on Vision",
+    "name": "Reporting on Vision",
+    "area": "Post-Hire Basics",
+    "categoryIndex": 3,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "P&P Guest Service",
+    "name": "Balancing Personable and Professional Guest Service",
+    "area": "Strategic Business Mindset",
+    "categoryIndex": 15,
+    "group": "All",
+    "level": "Level 2"
+  },
+  {
+    "short": "Data Security",
+    "name": "Data Security Awareness",
+    "area": "Post-Hire Basics",
+    "categoryIndex": 3,
+    "group": "All",
+    "level": "Level 1"
+  },
+  {
+    "short": "Enhanced Concessions",
+    "name": "Enhanced Concessions: Upselling and Suggestive Selling",
+    "area": "Food Service",
+    "categoryIndex": 5,
+    "group": "All",
+    "level": "Level 1"
+  },
+  {
+    "short": "Handling Difficult Guests",
+    "name": "Handling Difficult Guests",
+    "area": "Commitment to Excellence",
+    "categoryIndex": 13,
+    "group": "All",
+    "level": "Level 2"
+  },
+  {
+    "short": "Maximizing Experience",
+    "name": "Maximizing Experience",
+    "area": "Food Service",
+    "categoryIndex": 5,
+    "group": "All",
+    "level": "Level 1"
+  },
+  {
+    "short": "Showmanship",
+    "name": "Showmanship - Bringing Creativity to the Guest Experience",
+    "area": "Strategic Business Mindset",
+    "categoryIndex": 15,
+    "group": "All",
+    "level": "Level 2"
+  },
+  {
+    "short": "Regal Experience",
+    "name": "The Regal Experience",
+    "area": "Post-Hire Basics",
+    "categoryIndex": 3,
+    "group": "All",
+    "level": "Level 1"
+  },
+  {
+    "short": "TNTs",
+    "name": "Tiny Noticeable Things",
+    "area": "Post-Hire Basics",
+    "categoryIndex": 3,
+    "group": "All",
+    "level": "Level 1"
+  },
+  {
+    "short": "Asset Protection",
+    "name": "Asset Protection: Retail Theft Response",
+    "area": "Post-Hire Basics",
+    "categoryIndex": 3,
+    "group": "Leadership",
+    "level": "Other"
+  },
+  {
+    "short": "Enhanced Guest Service",
+    "name": "Enhanced Guest Service",
+    "area": "Post-Hire Basics",
+    "categoryIndex": 3,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Difficult Conversations",
+    "name": "How to Have a Difficult Conversation",
+    "area": "Commitment to Excellence",
+    "categoryIndex": 13,
+    "group": "Leadership",
+    "level": "Level 2"
+  },
+  {
+    "short": "Is the Guest Always Right?",
+    "name": "Is the Guest Always Right?",
+    "area": "Commitment to Excellence",
+    "categoryIndex": 13,
+    "group": "Leadership",
+    "level": "Level 2"
+  },
+  {
+    "short": "On Site Event - Leadership",
+    "name": "On Site Event Manager Training",
+    "area": "Marketing",
+    "categoryIndex": 7,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Operational Excellence - TL",
+    "name": "Team Lead Strategies for Operational Excellence",
+    "area": "Post-Hire Basics",
+    "categoryIndex": 3,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Intro to InMoment",
+    "name": "Introduction to InMoment",
+    "area": "Post-Hire Basics",
+    "categoryIndex": 3,
+    "group": "Leadership",
+    "level": "Other"
+  },
+  {
+    "short": "Active Shooter Preparedness",
+    "name": "Active Shooter Attack Prevention and Preparedness",
+    "area": "Compliance",
+    "categoryIndex": 0,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Bloodborne Pathogens",
+    "name": "Bloodborne Pathogens",
+    "area": "Compliance",
+    "categoryIndex": 0,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "General Safety",
+    "name": "General Safety",
+    "area": "Compliance",
+    "categoryIndex": 0,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Hazcom",
+    "name": "Hazcom",
+    "area": "Compliance",
+    "categoryIndex": 0,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Ladder Safety",
+    "name": "Ladder Safety",
+    "area": "Compliance",
+    "categoryIndex": 0,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Regal Policy Guide Walkthrough",
+    "name": "",
+    "area": "Policy Acknowledgement",
+    "categoryIndex": 1,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Welcome to Regal",
+    "name": "Welcome to Regal",
+    "area": "Pre-Board Courses",
+    "categoryIndex": 2,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "General Cleaning Philosophy",
+    "name": "General Cleaning Philosophy",
+    "area": "Pre-Board Courses",
+    "categoryIndex": 2,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Movie Ratings System",
+    "name": "Movie Ratings System",
+    "area": "Pre-Board Courses",
+    "categoryIndex": 2,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Regal Crown Club",
+    "name": "Regal Crown Club",
+    "area": "Pre-Board Courses",
+    "categoryIndex": 2,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Crisis Management",
+    "name": "",
+    "area": "Pre-Board Courses",
+    "categoryIndex": 2,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Intro to STAR",
+    "name": "Intro to the STAR Program",
+    "area": "Post-Hire Basics",
+    "categoryIndex": 3,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Intro to Team Member",
+    "name": "Intro to Team Member",
+    "area": "Post-Hire Basics",
+    "categoryIndex": 3,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Regal Mobile App Basics",
+    "name": "Regal Mobile App Basics",
+    "area": "Post-Hire Basics",
+    "categoryIndex": 3,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Community Affairs",
+    "name": "Community Affairs",
+    "area": "Post-Hire Basics",
+    "categoryIndex": 3,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Workplace Behavior",
+    "name": "Workplace Behavior",
+    "area": "Post-Hire Basics",
+    "categoryIndex": 3,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Cash Management - Team Lead",
+    "name": "Introduction to Cash Management - Team Lead",
+    "area": "Vista Back Office",
+    "categoryIndex": 4,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Tipped User Training",
+    "name": "Tipped User Training",
+    "area": "Vista Back Office",
+    "categoryIndex": 4,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Processing Manual Transactions",
+    "name": "Processing Manual Transactions",
+    "area": "Vista Back Office",
+    "categoryIndex": 4,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "RCC Credit Adjustments",
+    "name": "RCC Credit Adjustments",
+    "area": "Vista Back Office",
+    "categoryIndex": 4,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Theatre Inventory Management",
+    "name": "Theatre Inventory Management",
+    "area": "Vista Back Office",
+    "categoryIndex": 4,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Cash Handling 1",
+    "name": "Cash Handling Part 1",
+    "area": "Food Service",
+    "categoryIndex": 5,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Cash Handling 2",
+    "name": "Cash Handling Part 2",
+    "area": "Food Service",
+    "categoryIndex": 5,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Ice Ice Baby",
+    "name": "Ice Ice Baby",
+    "area": "Food Service",
+    "categoryIndex": 5,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Popper Cleaning",
+    "name": "Popper Cleaning",
+    "area": "Food Service",
+    "categoryIndex": 5,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Raven Thorn's Popcorn Challenge",
+    "name": "Raven Thorn's Popcorn Challenge",
+    "area": "Food Service",
+    "categoryIndex": 5,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Food Service Administration",
+    "name": "Food Service Administration",
+    "area": "Food Service",
+    "categoryIndex": 5,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Maximizing Profits",
+    "name": "Maximizing Profits",
+    "area": "Food Service",
+    "categoryIndex": 5,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Food and Beverage Excellence",
+    "name": "Food and Beverage Excellence",
+    "area": "Food Service",
+    "categoryIndex": 5,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Film Piracy",
+    "name": "Film Piracy",
+    "area": "Usher Courses",
+    "categoryIndex": 6,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Movie Theatre Security",
+    "name": "Movie Theatre Security",
+    "area": "Usher Courses",
+    "categoryIndex": 6,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Ticket Check",
+    "name": "Ticket Check",
+    "area": "Usher Courses",
+    "categoryIndex": 6,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Marketing Strategies and Events",
+    "name": "Marketing Strategies and Events",
+    "area": "Marketing",
+    "categoryIndex": 7,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Investigation Skills",
+    "name": "Investigation Skills",
+    "area": "Human Resources",
+    "categoryIndex": 8,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Manager FMLA Guide",
+    "name": "Managers Guide to the Family Medical Leave Act (FMLA)",
+    "area": "Human Resources",
+    "categoryIndex": 8,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Regal Academy",
+    "name": "Regal Academy Reporting and User Management",
+    "area": "Human Resources",
+    "categoryIndex": 8,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Training Others",
+    "name": "Training Others",
+    "area": "Human Resources",
+    "categoryIndex": 8,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Building Our Teams",
+    "name": "Building Our Teams",
+    "area": "Human Resources",
+    "categoryIndex": 8,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Counseling an Employee",
+    "name": "How to Counsel an Employee",
+    "area": "Human Resources",
+    "categoryIndex": 8,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Projection Booth Basics",
+    "name": "",
+    "area": "Projection Booth",
+    "categoryIndex": 9,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Screenwriter Training",
+    "name": "",
+    "area": "Projection Booth",
+    "categoryIndex": 9,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Full Interface, Producer, and Manual Playlists",
+    "name": "",
+    "area": "Projection Booth",
+    "categoryIndex": 9,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Monitoring Presentation Quality",
+    "name": "Monitoring Presentation Quality",
+    "area": "Projection Booth",
+    "categoryIndex": 9,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Food Safety - Intro",
+    "name": "Food Handler Safety - Intro",
+    "area": "Food Handler Safety",
+    "categoryIndex": 10,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Food Safety - Personal Hygiene",
+    "name": "Food Handler Safety - Personal Hygiene",
+    "area": "Food Handler Safety",
+    "categoryIndex": 10,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Food Safety - Cleaning and Sanitizing",
+    "name": "Food Handler Safety - Cleaning and Sanitizing",
+    "area": "Food Handler Safety",
+    "categoryIndex": 10,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Food Safety - Pest Control",
+    "name": "Food Handler Safety - Pest Control",
+    "area": "Food Handler Safety",
+    "categoryIndex": 10,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Food Safety - Food Storage",
+    "name": "Food Handler Safety - Food Storage",
+    "area": "Food Handler Safety",
+    "categoryIndex": 10,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Food Safety - Food Prep",
+    "name": "Food Handler Safety - Food Prep",
+    "area": "Food Handler Safety",
+    "categoryIndex": 10,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Food Safety - Cross Contamination",
+    "name": "Food Handler Safety - Cross Contamination",
+    "area": "Food Handler Safety",
+    "categoryIndex": 10,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Food Allergen Awareness",
+    "name": "Food Allergen Awareness",
+    "area": "Food Handler Safety",
+    "categoryIndex": 10,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Laser Projection Safety",
+    "name": "Laser Projection Safety",
+    "area": "Additional Courses",
+    "categoryIndex": 11,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "IMAX Training",
+    "name": "IMAX Training",
+    "area": "Additional Courses",
+    "categoryIndex": 11,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "IMAX 3D Glasses",
+    "name": "IMAX 3D Glasses",
+    "area": "Additional Courses",
+    "categoryIndex": 11,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Intouch Training",
+    "name": "Intouch Training",
+    "area": "Additional Courses",
+    "categoryIndex": 11,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Counting with Intouch",
+    "name": "Counting with Intouch",
+    "area": "Additional Courses",
+    "categoryIndex": 11,
+    "group": "Leadership",
+    "level": "Level 1"
+  },
+  {
+    "short": "Regal Bar Intro",
+    "name": "Regal Bar Intro",
+    "area": "Additional Courses",
+    "categoryIndex": 11,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Alcohol Sales and Misuse",
+    "name": "Legal Focus: Alcohol Sales and Misuse",
+    "area": "Additional Courses",
+    "categoryIndex": 11,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Naloxone Training and Use",
+    "name": "Naloxone Training and Use",
+    "area": "Additional Courses",
+    "categoryIndex": 11,
+    "group": "Staff",
+    "level": "Level 1"
+  },
+  {
+    "short": "Communication Fundamentals",
+    "name": "Communication Fundamentals",
+    "area": "Working Together",
+    "categoryIndex": 12,
+    "group": "Staff",
+    "level": "Level 2"
+  },
+  {
+    "short": "Integrity in the Workplace",
+    "name": "Integrity in the Workplace",
+    "area": "Working Together",
+    "categoryIndex": 12,
+    "group": "Staff",
+    "level": "Level 2"
+  },
+  {
+    "short": "Developing Professional Networks",
+    "name": "Developing and Maintaining a Professional Network",
+    "area": "Working Together",
+    "categoryIndex": 12,
+    "group": "Staff",
+    "level": "Level 2"
+  },
+  {
+    "short": "Common Workplace Challenges",
+    "name": "Common Workplace Challenges and How to Handle Them",
+    "area": "Working Together",
+    "categoryIndex": 12,
+    "group": "Staff",
+    "level": "Level 2"
+  },
+  {
+    "short": "Being a Great Buddy",
+    "name": "Being a Great Buddy",
+    "area": "Working Together",
+    "categoryIndex": 12,
+    "group": "Staff",
+    "level": "Level 2"
+  },
+  {
+    "short": "6 Tips for Peer-to-Peer Theatre Training",
+    "name": "6 Tips for Peer-to-Peer Theatre Training",
+    "area": "Working Together",
+    "categoryIndex": 12,
+    "group": "Staff",
+    "level": "Level 2"
+  },
+  {
+    "short": "Time Management Essentials",
+    "name": "Time Management Essentials",
+    "area": "Commitment to Excellence",
+    "categoryIndex": 13,
+    "group": "Staff",
+    "level": "Level 2"
+  },
+  {
+    "short": "Growth Mindset",
+    "name": "Growth Mindset",
+    "area": "Commitment to Excellence",
+    "categoryIndex": 13,
+    "group": "Staff",
+    "level": "Level 2"
+  },
+  {
+    "short": "Mental Toughness",
+    "name": "Mental Toughness",
+    "area": "Commitment to Excellence",
+    "categoryIndex": 13,
+    "group": "Staff",
+    "level": "Level 2"
+  },
+  {
+    "short": "Workplace Change",
+    "name": "Coping with Workplace Change",
+    "area": "Commitment to Excellence",
+    "categoryIndex": 13,
+    "group": "Leadership",
+    "level": "Level 2"
+  },
+  {
+    "short": "Empowerment",
+    "name": "Empowerment",
+    "area": "Creativity & Critical Thinking",
+    "categoryIndex": 14,
+    "group": "Staff",
+    "level": "Level 2"
+  },
+  {
+    "short": "Critical Thinking",
+    "name": "Critical Thinking",
+    "area": "Creativity & Critical Thinking",
+    "categoryIndex": 14,
+    "group": "Staff",
+    "level": "Level 2"
+  },
+  {
+    "short": "Step-by-Step Problem Solving",
+    "name": "A Step-by-Step Guide to Problem Solving in Your Theatre",
+    "area": "Creativity & Critical Thinking",
+    "categoryIndex": 14,
+    "group": "Staff",
+    "level": "Level 2"
+  },
+  {
+    "short": "Creating Presentations",
+    "name": "Creating and Delivering Presentations",
+    "area": "Creativity & Critical Thinking",
+    "categoryIndex": 14,
+    "group": "Leadership",
+    "level": "Level 2"
+  },
+  {
+    "short": "Professionalism",
+    "name": "Professionalism: Meeting the Standards that Matter",
+    "area": "Strategic Business Mindset",
+    "categoryIndex": 15,
+    "group": "Staff",
+    "level": "Level 2"
+  },
+  {
+    "short": "Buidling Better Relationships",
+    "name": "How to Build Better Relationships with Your Manager and Coworkers",
+    "area": "Strategic Business Mindset",
+    "categoryIndex": 15,
+    "group": "Staff",
+    "level": "Level 2"
+  },
+  {
+    "short": "Skilled Delegation",
+    "name": "The Secrets of Skilled Delegation",
+    "area": "Leading, Mentoring, and Developing",
+    "categoryIndex": 16,
+    "group": "Leadership",
+    "level": "Level 2"
+  },
+  {
+    "short": "Coaching Employees",
+    "name": "How to Coach an Employee",
+    "area": "Leading, Mentoring, and Developing",
+    "categoryIndex": 16,
+    "group": "Leadership",
+    "level": "Level 2"
+  },
+  {
+    "short": "Managing Stress",
+    "name": "The Basics of Managing Stress",
+    "area": "Leading, Mentoring, and Developing",
+    "categoryIndex": 16,
+    "group": "Leadership",
+    "level": "Level 2"
+  },
+  {
+    "short": "Giving Effective Feedback",
+    "name": "Giving Effective Feedback in the Theatre",
+    "area": "Leading, Mentoring, and Developing",
+    "categoryIndex": 16,
+    "group": "Leadership",
+    "level": "Level 2"
+  },
+  {
+    "short": "Intro to SHOW Strategy",
+    "name": "Introduction to the SHOW Strategy (RCG)",
+    "area": "GM University",
+    "categoryIndex": 17,
+    "group": "GM",
+    "level": ""
+  },
+  {
+    "short": "SHOW Strategy Playbook",
+    "name": "SHOW Strategy Playbook for General Managers (RCG)",
+    "area": "GM University",
+    "categoryIndex": 17,
+    "group": "GM",
+    "level": ""
+  },
+  {
+    "short": "Introduction to P&L",
+    "name": "Highest Returns: Introduction to P&L (RCG)",
+    "area": "GM University",
+    "categoryIndex": 17,
+    "group": "GM",
+    "level": ""
+  },
+  {
+    "short": "Maximizing Market Share",
+    "name": "Optimized Portfolio: Maximizing Market Share (RCG)",
+    "area": "GM University",
+    "categoryIndex": 17,
+    "group": "GM",
+    "level": ""
+  },
+  {
+    "short": "The 5C\u2019s",
+    "name": "Superior Entertainment Experience: The 5C\u2019s (RCG)",
+    "area": "GM University",
+    "categoryIndex": 17,
+    "group": "GM",
+    "level": ""
+  },
+  {
+    "short": "Highest Returns Part 1",
+    "name": "Highest Returns: Advanced Financial Performance - Part 1 (RCG)",
+    "area": "GM University",
+    "categoryIndex": 17,
+    "group": "GM",
+    "level": ""
+  },
+  {
+    "short": "Highest Returns Part 2",
+    "name": "Highest Returns: Advanced Financial Performance - Part 2 (RCG)",
+    "area": "GM University",
+    "categoryIndex": 17,
+    "group": "GM",
+    "level": ""
+  }
+];
+
+</script>
+  <script>
+    (function(){
+      const STORAGE_KEY = 'tt-trainingTrackerState-v1';
+      const IDB_NAME = 'tt-training-tracker';
+      const IDB_STORE = 'state';
+      const IDB_KEY = 'singleton';
+      const defaultEmployees = [
+        {id:'E1',name:'Kaylie Taylor',title:'Concession'},
+        {id:'E2',name:'Noah Walker',title:'Usher'},
+        {id:'E3',name:'Kayden Phillips',title:'Usher'}
+      ];
+      const defaultClasses = (Array.isArray(window.TRAINING_TRACKER_COURSES) ? window.TRAINING_TRACKER_COURSES : []).map((item)=>{
+        const normalized = {...item};
+        if(normalized && typeof normalized === 'object'){
+          if(normalized.area === undefined && normalized.category !== undefined) normalized.area = normalized.category;
+          if(normalized.area === undefined && normalized.Category !== undefined) normalized.area = normalized.Category;
+          if(normalized.categoryIndex === undefined && normalized.category_index !== undefined) normalized.categoryIndex = normalized.category_index;
+          if(normalized.categoryIndex === undefined && normalized.Category_Index !== undefined) normalized.categoryIndex = normalized.Category_Index;
+          if(normalized.positions === undefined && normalized.group !== undefined) normalized.positions = normalized.group;
+          if(normalized.positions === undefined && normalized.Positions !== undefined) normalized.positions = normalized.Positions;
+          if(normalized.group === undefined && normalized.positions !== undefined) normalized.group = normalized.positions;
+          if(normalized.leadership === undefined && normalized.Leadership !== undefined) normalized.leadership = normalized.Leadership;
+          if(normalized.step === undefined && normalized.Step !== undefined) normalized.step = normalized.Step;
+        }
+        return normalized;
+      });
+
+      const checkSvg = '<svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M8.2 13.4 4.8 10l1.4-1.4 2 2 5.6-5.6 1.4 1.4-7 7z"></path></svg>';
+
+      const slug = (s)=> String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+      const clone = (val)=> JSON.parse(JSON.stringify(val||{}));
+      const catalogColumns = [
+        {key:'short', placeholder:'Short code'},
+        {key:'name', placeholder:'Class name'},
+        {key:'area', placeholder:'Category'},
+        {key:'categoryIndex', placeholder:'Category index'},
+        {key:'group', placeholder:'Positions'},
+        {key:'level', placeholder:'Level'},
+        {key:'leadership', placeholder:'Leadership (Yes/No)'},
+        {key:'step', placeholder:'Step'}
+      ];
+
+      function enrichCatalog(list){
+        return list.map((item, index)=>{
+          const base = {...item};
+          const fallbackId = slug(`${base.short||''}|${base.name||''}`) || `class-${index+1}`;
+          const id = base.id || fallbackId;
+          let level = base.level || '';
+          if(!level){
+            const levelSource = base.group || base.positions || '';
+            const m = String(levelSource).match(/level\s*(\d+)/i);
+            if(m) level = `Level ${m[1]}`;
+          }
+          let step = base.step || '';
+          if(!step){
+            const p1 = (base.name||'').match(/part\s*(\d+)/i);
+            if(p1) step = p1[1];
+          }
+          if(!step){
+            const p2 = (base.short||'').match(/part\s*(\d+)/i);
+            if(p2) step = p2[1];
+          }
+          if(!step){
+            const p3 = (base.short||'').match(/(\d+)$/);
+            if(p3) step = p3[1];
+          }
+          const positions = base.positions || base.group || '';
+          const group = positions || base.group || '';
+          const {display: categoryIndex, order: categoryOrder} = parseCategoryIndex(base.categoryIndex);
+          const leadership = normalizeLeadership(base.leadership, positions || group);
+          const name = base.name || base.short || id;
+          return {
+            ...base,
+            id,
+            name,
+            level,
+            step,
+            positions,
+            group,
+            categoryIndex,
+            leadership,
+            __categoryOrder: categoryOrder,
+            __index: index
+          };
+        });
+      }
+
+      function prepareClassList(list){
+        return (list || []).map((item, index)=>{
+          const copy = {...item};
+          const fallbackId = slug(`${copy.short||''}|${copy.name||''}`) || `class-${index+1}`;
+          copy.id = copy.id || fallbackId;
+          if(!copy.positions && copy.group) copy.positions = copy.group;
+          if(copy.positions && !copy.group) copy.group = copy.positions;
+          copy.leadership = normalizeLeadership(copy.leadership, copy.positions || copy.group || '');
+          return copy;
+        });
+      }
+
+      function uniqueSorted(arr){
+        return Array.from(new Set(arr.filter(v=>v))).sort((a,b)=>String(a).localeCompare(String(b)));
+      }
+
+      function normalizeLeadership(value, positions){
+        const raw = String(value ?? '').trim();
+        if(raw){
+          if(/^(yes|y|true|1)$/i.test(raw)) return 'Yes';
+          if(/^(no|n|false|0)$/i.test(raw)) return 'No';
+          return raw;
+        }
+        const pos = String(positions || '');
+        if(/(leadership|gm)/i.test(pos)) return 'Yes';
+        return 'No';
+      }
+
+      function parseCategoryIndex(value){
+        if(value === undefined || value === null) return {display:'', order:Number.POSITIVE_INFINITY};
+        const raw = String(value).trim();
+        if(!raw) return {display:'', order:Number.POSITIVE_INFINITY};
+        const num = Number(raw);
+        if(Number.isFinite(num)){
+          return {display:String(num), order:num};
+        }
+        return {display:raw, order:Number.POSITIVE_INFINITY};
+      }
+
+      let instance = null;
+      let persistenceMode = null; // 'idb' | 'local' | null
+      let dbPromise = null;
+      let saveQueue = Promise.resolve();
+
+      function getIndexedDb(){
+        if(dbPromise) return dbPromise;
+        if(typeof indexedDB === 'undefined'){ return Promise.resolve(null); }
+        dbPromise = new Promise((resolve, reject)=>{
+          try{
+            const request = indexedDB.open(IDB_NAME, 1);
+            request.onupgradeneeded = ()=>{
+              const db = request.result;
+              if(!db.objectStoreNames.contains(IDB_STORE)){
+                db.createObjectStore(IDB_STORE);
+              }
+            };
+            request.onsuccess = ()=> resolve(request.result);
+            request.onerror = ()=> reject(request.error || new Error('indexedDB open failed'));
+          }catch(err){
+            reject(err);
+          }
+        }).catch(err=>{
+          console.warn('TrainingTracker: indexedDB unavailable', err);
+          return null;
+        });
+        return dbPromise;
+      }
+
+      async function idbReadState(){
+        const db = await getIndexedDb();
+        if(!db) return null;
+        return new Promise((resolve, reject)=>{
+          try{
+            const tx = db.transaction(IDB_STORE, 'readonly');
+            const store = tx.objectStore(IDB_STORE);
+            const req = store.get(IDB_KEY);
+            req.onsuccess = ()=> resolve(req.result || null);
+            req.onerror = ()=> reject(req.error || new Error('indexedDB read failed'));
+            tx.onabort = ()=> reject(tx.error || new Error('indexedDB read aborted'));
+          }catch(err){
+            reject(err);
+          }
+        }).catch(err=>{
+          console.warn('TrainingTracker: failed to read indexedDB state', err);
+          return null;
+        });
+      }
+
+      async function idbWriteState(value){
+        const db = await getIndexedDb();
+        if(!db) throw new Error('indexedDB unavailable');
+        return new Promise((resolve, reject)=>{
+          try{
+            const tx = db.transaction(IDB_STORE, 'readwrite');
+            const store = tx.objectStore(IDB_STORE);
+            const req = store.put(value, IDB_KEY);
+            req.onsuccess = ()=> resolve();
+            req.onerror = ()=> reject(req.error || new Error('indexedDB write failed'));
+            tx.onabort = ()=> reject(tx.error || new Error('indexedDB write aborted'));
+          }catch(err){
+            reject(err);
+          }
+        });
+      }
+
+      function scheduleIdle(callback){
+        if(typeof requestIdleCallback === 'function'){
+          const id = requestIdleCallback(callback);
+          return {type:'idle', id};
+        }
+        const id = setTimeout(()=>callback({timeRemaining:()=>Number.MAX_VALUE}), 16);
+        return {type:'timeout', id};
+      }
+
+      function cancelIdleHandle(handle){
+        if(!handle) return;
+        if(handle.type === 'idle' && typeof cancelIdleCallback === 'function'){
+          cancelIdleCallback(handle.id);
+        }else if(handle.type === 'timeout'){
+          clearTimeout(handle.id);
+        }
+      }
+
+      function idlePause(){
+        return new Promise(resolve=>{
+          const token = scheduleIdle(()=>resolve());
+          if(token && token.type === 'timeout'){
+            // nothing extra needed for timeout variant
+          }
+        });
+      }
+
+      function buildSelect(labelText, id){
+        const wrapper = document.createElement('label');
+        wrapper.setAttribute('for', id);
+        wrapper.textContent = labelText+':';
+        const select = document.createElement('select');
+        select.id = id;
+        wrapper.appendChild(select);
+        return {wrapper, select};
+      }
+
+      function buildCheckbox(labelText, id){
+        const label = document.createElement('label');
+        label.className = 'tt-checkbox';
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.id = id;
+        const box = document.createElement('span');
+        box.className = 'tt-box';
+        const text = document.createElement('span');
+        text.textContent = labelText;
+        label.append(input, box, text);
+        return {label, input};
+      }
+
+      function createStructure(){
+        const app = document.createElement('div');
+        app.className = 'tt-app';
+
+        const headerPanel = document.createElement('section');
+        headerPanel.className = 'tt-panel tt-header-panel';
+        const title = document.createElement('h1');
+        title.textContent = 'Training Tracker';
+        const badge = document.createElement('span');
+        badge.id = 'tt-testBadge';
+        badge.className = 'tt-badge';
+        const headerInfo = document.createElement('div');
+        headerInfo.className = 'tt-header-info';
+        headerInfo.append(title, badge);
+
+        const importWrap = document.createElement('div');
+        importWrap.className = 'tt-import';
+        const importBtn = document.createElement('button');
+        importBtn.type = 'button';
+        importBtn.id = 'tt-importBtn';
+        importBtn.className = 'tt-import-btn';
+        importBtn.textContent = 'Import Training Data';
+        const importStatus = document.createElement('div');
+        importStatus.id = 'tt-importStatus';
+        importStatus.className = 'tt-import-status';
+        importStatus.setAttribute('aria-live','polite');
+        const importInput = document.createElement('input');
+        importInput.type = 'file';
+        importInput.accept = '.csv,.tsv,.txt';
+        importInput.id = 'tt-importFile';
+        importInput.className = 'tt-hidden';
+        importWrap.append(importBtn, importStatus, importInput);
+        // Add a button to allow clearing persisted data (localStorage & indexedDB)
+        const resetBtn = document.createElement('button');
+        resetBtn.type = 'button';
+        resetBtn.id = 'tt-resetBtn';
+        // reuse import button styling for consistency
+        resetBtn.className = 'tt-import-btn';
+        resetBtn.textContent = 'Clear Saved Data';
+        importWrap.appendChild(resetBtn);
+
+        headerPanel.append(headerInfo, importWrap);
+
+        const subnav = document.createElement('section');
+        subnav.className = 'tt-panel';
+        subnav.id = 'tt-subnav';
+        const pilltabs = document.createElement('div');
+        pilltabs.className = 'tt-pilltabs';
+        const tabOverview = document.createElement('button');
+        tabOverview.id = 'tt-tab-overview';
+        tabOverview.className = 'tt-pilltab';
+        tabOverview.type = 'button';
+        tabOverview.textContent = 'Manager Overview';
+        const tabEmployee = document.createElement('button');
+        tabEmployee.id = 'tt-tab-employee';
+        tabEmployee.className = 'tt-pilltab';
+        tabEmployee.type = 'button';
+        tabEmployee.textContent = 'Employee Detail';
+        const tabCatalog = document.createElement('button');
+        tabCatalog.id = 'tt-tab-catalog';
+        tabCatalog.className = 'tt-pilltab';
+        tabCatalog.type = 'button';
+        tabCatalog.textContent = 'All Classes';
+        pilltabs.append(tabOverview, tabEmployee, tabCatalog);
+        // Additional tabs for Employee List and Job Titles
+        const tabEmpList = document.createElement('button');
+        tabEmpList.id = 'tt-tab-emplist';
+        tabEmpList.className = 'tt-pilltab';
+        tabEmpList.type = 'button';
+        tabEmpList.textContent = 'Employee List';
+        const tabJobList = document.createElement('button');
+        tabJobList.id = 'tt-tab-joblist';
+        tabJobList.className = 'tt-pilltab';
+        tabJobList.type = 'button';
+        tabJobList.textContent = 'Job Titles';
+        pilltabs.append(tabEmpList, tabJobList);
+        subnav.appendChild(pilltabs);
+
+        const overview = document.createElement('section');
+        overview.id = 'tt-screen-overview';
+        overview.className = 'tt-panel';
+        const overviewHeading = document.createElement('h2');
+        overviewHeading.textContent = 'Manager Overview';
+        const overviewFilters = document.createElement('div');
+        overviewFilters.className = 'tt-row';
+        const classFilter = buildSelect('Class', 'tt-classFilter');
+        const catFilter = buildSelect('Category', 'tt-catFilter');
+        const groupFilter = buildSelect('Group', 'tt-groupFilter');
+        const levelFilter = buildSelect('Level', 'tt-levelFilter');
+        const stepFilter = buildSelect('Step', 'tt-stepFilter');
+        // New site filter (organization code) for manager overview
+        const siteFilter = buildSelect('Site', 'tt-siteFilter');
+        const overviewHint = document.createElement('span');
+        overviewHint.className = 'tt-muted';
+        overviewHint.textContent = 'Click a row to open that employee.';
+        // Append all filters including the new site filter, followed by the hint
+        overviewFilters.append(classFilter.wrapper, catFilter.wrapper, groupFilter.wrapper, levelFilter.wrapper, stepFilter.wrapper, siteFilter.wrapper, overviewHint);
+        const grid = document.createElement('div');
+        grid.className = 'tt-grid';
+        const overviewTable = document.createElement('table');
+        overviewTable.id = 'tt-overviewTbl';
+        overviewTable.setAttribute('role','table');
+        const overviewHead = document.createElement('thead');
+        overviewHead.id = 'tt-overviewHead';
+        const overviewBody = document.createElement('tbody');
+        overviewBody.id = 'tt-overviewBody';
+        overviewTable.append(overviewHead, overviewBody);
+        grid.appendChild(overviewTable);
+        const overviewEmpty = document.createElement('div');
+        overviewEmpty.id = 'tt-overviewEmpty';
+        overviewEmpty.className = 'tt-empty tt-hidden';
+        overviewEmpty.textContent = 'No classes match the current filters.';
+        overview.append(overviewHeading, overviewFilters, grid, overviewEmpty);
+
+        const employee = document.createElement('section');
+        employee.id = 'tt-screen-employee';
+        employee.className = 'tt-panel tt-hidden';
+        const employeeHeading = document.createElement('h2');
+        employeeHeading.textContent = 'Employee Detail';
+        const empFilters = document.createElement('div');
+        empFilters.className = 'tt-row';
+        const empSel = buildSelect('Employee', 'tt-empSel');
+        const empCat = buildSelect('Category', 'tt-empCat');
+        const empGroup = buildSelect('Group', 'tt-empGroup');
+        const empLevel = buildSelect('Level', 'tt-empLevel');
+        const empStep = buildSelect('Step', 'tt-empStep');
+        empFilters.append(empSel.wrapper, empCat.wrapper, empGroup.wrapper, empLevel.wrapper, empStep.wrapper);
+        const detailHost = document.createElement('div');
+        detailHost.id = 'tt-detailHost';
+        detailHost.style.marginTop = '8px';
+        const sigRow = document.createElement('div');
+        sigRow.className = 'tt-row tt-sig-row';
+        const empAck = buildCheckbox('Employee Acknowledgement', 'tt-empAck');
+        const mgrAck = buildCheckbox('Manager Sign-off', 'tt-mgrAck');
+        const spacer = document.createElement('span');
+        spacer.className = 'tt-spacer';
+        const empSigLabel = document.createElement('span'); empSigLabel.textContent = 'Employee:';
+        const empLine = document.createElement('input'); empLine.type = 'text'; empLine.className = 'tt-sigline'; empLine.id = 'tt-empLine';
+        const buddyLabel = document.createElement('span'); buddyLabel.textContent = 'Buddy:';
+        const buddyLine = document.createElement('input'); buddyLine.type = 'text'; buddyLine.className = 'tt-sigline'; buddyLine.id = 'tt-buddyLine';
+        sigRow.append(empAck.label, mgrAck.label, spacer, empSigLabel, empLine, buddyLabel, buddyLine);
+        employee.append(employeeHeading, empFilters, detailHost, sigRow);
+
+        const catalog = document.createElement('section');
+        catalog.id = 'tt-screen-catalog';
+        catalog.className = 'tt-panel tt-hidden';
+        const catalogHeading = document.createElement('h2');
+        catalogHeading.textContent = 'All Classes';
+        const catalogFilters = document.createElement('div');
+        catalogFilters.className = 'tt-row';
+        const searchWrap = document.createElement('label');
+        searchWrap.textContent = 'Search:';
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.id = 'tt-catalogSearch';
+        searchInput.placeholder = 'Type to filter by name or short id';
+        searchWrap.appendChild(searchInput);
+        const catalogCat = buildSelect('Category', 'tt-catalogCat');
+        const catalogGroup = buildSelect('Group', 'tt-catalogGroup');
+        const catalogLevel = buildSelect('Level', 'tt-catalogLevel');
+        const catalogStep = buildSelect('Step', 'tt-catalogStep');
+        catalogFilters.append(searchWrap, catalogCat.wrapper, catalogGroup.wrapper, catalogLevel.wrapper, catalogStep.wrapper);
+        const catalogGrid = document.createElement('div');
+        catalogGrid.className = 'tt-grid';
+        const catalogTable = document.createElement('table');
+        const catalogHead = document.createElement('thead');
+        catalogHead.innerHTML = '<tr><th>Short</th><th>Name</th><th>Category</th><th>Category Index</th><th>Positions</th><th>Level</th><th>Leadership</th><th>Step</th></tr>';
+        const catalogBody = document.createElement('tbody');
+        catalogBody.id = 'tt-catalogBody';
+        catalogTable.append(catalogHead, catalogBody);
+        catalogGrid.appendChild(catalogTable);
+        catalog.append(catalogHeading, catalogFilters, catalogGrid);
+
+        // Build Employee List screen
+        const empList = document.createElement('section');
+        empList.id = 'tt-screen-emplist';
+        empList.className = 'tt-panel tt-hidden';
+        const empListHeading = document.createElement('h2');
+        empListHeading.textContent = 'Employee List';
+        const empListGrid = document.createElement('div');
+        empListGrid.className = 'tt-grid';
+        const empListTable = document.createElement('table');
+        const empListHead = document.createElement('thead');
+        empListHead.innerHTML = '<tr><th>ID</th><th>Name</th><th>Org Code</th><th>Job Code</th><th>Location</th><th>Status</th></tr>';
+        const empListBody = document.createElement('tbody');
+        empListBody.id = 'tt-empListBody';
+        empListTable.append(empListHead, empListBody);
+        empListGrid.appendChild(empListTable);
+        empList.append(empListHeading, empListGrid);
+
+        // Build Job Titles screen
+        const jobList = document.createElement('section');
+        jobList.id = 'tt-screen-joblist';
+        jobList.className = 'tt-panel tt-hidden';
+        const jobListHeading = document.createElement('h2');
+        jobListHeading.textContent = 'Job Titles';
+        const jobListGrid = document.createElement('div');
+        jobListGrid.className = 'tt-grid';
+        const jobListTable = document.createElement('table');
+        const jobListHead = document.createElement('thead');
+        jobListHead.innerHTML = '<tr><th>Job Code</th><th>Employees</th></tr>';
+        const jobListBody = document.createElement('tbody');
+        jobListBody.id = 'tt-jobListBody';
+        jobListTable.append(jobListHead, jobListBody);
+        jobListGrid.appendChild(jobListTable);
+        jobList.append(jobListHeading, jobListGrid);
+
+        // Append new panels to the app
+        app.append(headerPanel, subnav, overview, employee, catalog, empList, jobList);
+
+        return {
+          app,
+          headerPanel,
+          headerInfo,
+          badge,
+          importButton: importBtn,
+          importInput,
+          importStatus,
+          resetButton: resetBtn,
+          tabOverview,
+          tabEmployee,
+          tabCatalog,
+          overviewSection: overview,
+          overviewTable,
+          overviewHead,
+          overviewBody,
+          overviewEmpty,
+          classFilter: classFilter.select,
+          catFilter: catFilter.select,
+          groupFilter: groupFilter.select,
+          levelFilter: levelFilter.select,
+          stepFilter: stepFilter.select,
+          employeeSection: employee,
+          empFilters: {
+            empSel: empSel.select,
+            empCat: empCat.select,
+            empGroup: empGroup.select,
+            empLevel: empLevel.select,
+            empStep: empStep.select
+          },
+          detailHost,
+          empAck: empAck.input,
+          mgrAck: mgrAck.input,
+          empLine,
+          buddyLine,
+          catalogSection: catalog,
+          catalogBody,
+          catalogFilters: {
+            search: searchInput,
+            cat: catalogCat.select,
+            group: catalogGroup.select,
+            level: catalogLevel.select,
+            step: catalogStep.select
+          },
+          // New site filter select element
+          siteFilter: siteFilter.select,
+          // Tab buttons for new pages
+          tabEmpList,
+          tabJobList,
+          // Panels and bodies for Employee List and Job Titles
+          empListSection: empList,
+          empListBody: empListBody,
+          jobListSection: jobList,
+          jobListBody: jobListBody
+        };
+      }
+      function ensureBucket(store, key){
+        if(!store[key]) store[key] = {};
+        return store[key];
+      }
+
+      function createInstance(rootElement, options={}){
+        if(!rootElement) throw new Error('TrainingTracker.mount requires a root element');
+        const elements = createStructure();
+        rootElement.appendChild(elements.app);
+
+        const listeners = [];
+        const addListener = (target, type, handler)=>{
+          target.addEventListener(type, handler);
+          listeners.push({target, type, handler});
+        };
+
+        const state = {
+          employees: [],
+          classes: [],
+          catalog: [],
+          completion: {},
+          completionMeta: {},
+          completionCounts: {}
+        };
+        let customClassCounter = 0;
+        let activeTab = 'overview';
+        let overviewChunkCancel = null;
+        const onChange = typeof options.onChange === 'function' ? options.onChange : null;
+
+        const usePersistence = !options || (Object.keys(options).length === 0);
+
+        function bumpCompletionCount(empId, delta){
+          if(!delta) return;
+          const current = state.completionCounts[empId] || 0;
+          const next = current + delta;
+          if(next > 0){
+            state.completionCounts[empId] = next;
+          }else{
+            delete state.completionCounts[empId];
+          }
+        }
+
+        function recomputeCompletionCounts(){
+          const counts = {};
+          if(state.completion && typeof state.completion === 'object'){
+            Object.keys(state.completion).forEach(empId=>{
+              const bucket = state.completion[empId];
+              if(!bucket || typeof bucket !== 'object') return;
+              let total = 0;
+              for(const key in bucket){
+                if(bucket[key]) total += 1;
+              }
+              if(total > 0){
+                counts[empId] = total;
+              }
+            });
+          }
+          state.completionCounts = counts;
+        }
+
+        async function loadData(){
+          state.employees = clone(options.employees || defaultEmployees);
+          state.classes = prepareClassList(clone(options.classes || defaultClasses));
+          state.completion = clone(options.completions || {});
+          state.completionMeta = clone(options.completionMeta || {});
+
+          if(usePersistence){
+            let restoredPersisted = false;
+            let loadedFromIndexedDb = false;
+            if(typeof indexedDB !== 'undefined'){
+              persistenceMode = 'idb';
+              try{
+                const persisted = await idbReadState();
+                if(persisted){
+                  if(persisted.completion) state.completion = clone(persisted.completion);
+                  // Merge persisted classes with default classes instead of replacing them.
+                  if(persisted.classes){
+                    const persistedList = prepareClassList(clone(persisted.classes));
+                    let baseList = state.classes || [];
+                    persistedList.forEach(cls=>{
+                      // attempt to match by id first, falling back to short code match (case-insensitive)
+                      const matchIndex = baseList.findIndex(item=>{
+                        return (item.id && cls.id && item.id === cls.id) ||
+                               (item.short && cls.short && String(item.short).toLowerCase() === String(cls.short).toLowerCase());
+                      });
+                      if(matchIndex >= 0){
+                        // merge user-entered fields into the base class
+                        baseList[matchIndex] = {...baseList[matchIndex], ...cls};
+                      }else{
+                        baseList.push(cls);
+                      }
+                    });
+                    state.classes = baseList;
+                  }
+                  // Merge persisted employees with defaults instead of replacing them.
+                  if(persisted.employees){
+                    const persistedEmps = clone(persisted.employees);
+                    let baseEmps = state.employees || [];
+                    persistedEmps.forEach(emp=>{
+                      const idx = baseEmps.findIndex(e=> e && emp && e.id === emp.id);
+                      if(idx >= 0){
+                        baseEmps[idx] = {...baseEmps[idx], ...emp};
+                      }else{
+                        baseEmps.push(emp);
+                      }
+                    });
+                    state.employees = baseEmps;
+                  }
+                  if(persisted.completionMeta) state.completionMeta = clone(persisted.completionMeta);
+                  restoredPersisted = true;
+                  loadedFromIndexedDb = true;
+                }
+              }catch(err){
+                console.warn('TrainingTracker: indexedDB load failed', err);
+              }
+            }
+
+            if(!persistenceMode && typeof localStorage !== 'undefined'){
+              persistenceMode = 'local';
+            }
+
+            if(!restoredPersisted && typeof localStorage !== 'undefined'){
+              try{
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if(raw){
+                  const parsed = JSON.parse(raw);
+                  if(parsed.completion) state.completion = clone(parsed.completion);
+                  if(parsed.classes){
+                    const persistedList = prepareClassList(clone(parsed.classes));
+                    let baseList = state.classes || [];
+                    persistedList.forEach(cls=>{
+                      const matchIndex = baseList.findIndex(item=>{
+                        return (item.id && cls.id && item.id === cls.id) ||
+                               (item.short && cls.short && String(item.short).toLowerCase() === String(cls.short).toLowerCase());
+                      });
+                      if(matchIndex >= 0){
+                        baseList[matchIndex] = {...baseList[matchIndex], ...cls};
+                      }else{
+                        baseList.push(cls);
+                      }
+                    });
+                    state.classes = baseList;
+                  }
+                  if(parsed.employees){
+                    const persistedEmps = clone(parsed.employees);
+                    let baseEmps = state.employees || [];
+                    persistedEmps.forEach(emp=>{
+                      const idx = baseEmps.findIndex(e=> e && emp && e.id === emp.id);
+                      if(idx >= 0){
+                        baseEmps[idx] = {...baseEmps[idx], ...emp};
+                      }else{
+                        baseEmps.push(emp);
+                      }
+                    });
+                    state.employees = baseEmps;
+                  }
+                  if(parsed.completionMeta) state.completionMeta = clone(parsed.completionMeta);
+                  restoredPersisted = true;
+                }
+              }catch(err){
+                console.warn('TrainingTracker: failed to load saved state', err);
+              }
+            }
+
+            if(persistenceMode === 'idb' && restoredPersisted && !loadedFromIndexedDb){
+              // migrate localStorage payload into indexedDB asynchronously
+              const payload = {
+                completion: state.completion,
+                completionMeta: state.completionMeta,
+                classes: state.classes,
+                employees: state.employees
+              };
+              saveQueue = saveQueue.then(()=>idbWriteState(payload)).catch(err=>{
+                console.warn('TrainingTracker: migration to indexedDB failed', err);
+              });
+            }
+          }else{
+            persistenceMode = null;
+          }
+
+          state.catalog = enrichCatalog(state.classes);
+          customClassCounter = state.classes.length;
+          if(!Array.isArray(state.employees)) state.employees = [];
+          if(!state.completion || typeof state.completion !== 'object') state.completion = {};
+          if(!state.completionMeta || typeof state.completionMeta !== 'object') state.completionMeta = {};
+          recomputeCompletionCounts();
+        }
+
+        function saveState(){
+          if(!usePersistence) return;
+          const payload = {
+            completion: state.completion,
+            completionMeta: state.completionMeta,
+            classes: state.classes,
+            employees: state.employees
+          };
+
+          if(persistenceMode === 'idb'){
+            saveQueue = saveQueue.then(()=>idbWriteState(payload)).catch(err=>{
+              console.warn('TrainingTracker: failed to persist state to indexedDB', err);
+              if(typeof localStorage !== 'undefined'){
+                persistenceMode = 'local';
+                try{
+                  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+                }catch(localErr){
+                  console.warn('TrainingTracker: fallback localStorage persist failed', localErr);
+                }
+              }
+            });
+          }else if(persistenceMode === 'local' && typeof localStorage !== 'undefined'){
+            try{
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+            }catch(err){
+              console.warn('TrainingTracker: failed to persist state', err);
+            }
+          }
+        }
+
+        function setCompletion(empId, classId, value){
+          const changed = applyCompletionRecord(state.completion, state.completionMeta, empId, classId, !!value);
+          if(!changed) return false;
+          saveState();
+          if(onChange){
+            try{ onChange({employeeId: empId, classId, done: !!value}); }
+            catch(err){ console.error('TrainingTracker onChange error', err); }
+          }
+          return true;
+        }
+
+        function toggleCompletion(empId, classId){
+          const current = !!(state.completion[empId]?.[classId]);
+          const changed = setCompletion(empId, classId, !current);
+          if(changed) buildOverview();
+        }
+
+        function getCompletionMeta(empId, classId){
+          const bucket = state.completionMeta?.[empId];
+          return bucket ? bucket[classId] || null : null;
+        }
+
+        function formatCompletionDate(value){
+          if(!value) return '';
+          const raw = String(value).trim();
+          if(!raw) return '';
+          const iso = raw.replace(/\s+/, 'T');
+          const date = new Date(iso);
+          if(Number.isNaN(date.getTime())) return raw;
+          return date.toLocaleDateString(undefined, {year:'numeric', month:'short', day:'numeric'});
+        }
+
+        function generateClassId(values){
+          const baseSlug = slug(`${values.short||''}|${values.name||''}`);
+          if(baseSlug && !state.classes.some(cls=>cls.id === baseSlug)){
+            return baseSlug;
+          }
+          customClassCounter += 1;
+          return `custom-${Date.now().toString(36)}-${customClassCounter}`;
+        }
+
+
+        function collectCatalogRowValues(row){
+          if(!row) return null;
+          const values = {};
+          let hasContent = false;
+          catalogColumns.forEach(col=>{
+            const input = row.querySelector(`input[data-field="${col.key}"]`);
+            const value = (input?.value || '').trim();
+            values[col.key] = value;
+            if(value) hasContent = true;
+          });
+          return hasContent ? values : null;
+        }
+
+        const importHeaderAliases = {
+          userNumber: ['user number','employee number','user id','employee id','person number'],
+          firstName: ['first name','firstname','given name'],
+          lastName: ['surname','last name','lastname','family name'],
+          fullName: ['name','employee name','full name'],
+          orgCode: ['organization code','org code'],
+          jobCode: ['job code','job title','job'],
+          location: ['location','site','theatre','theater'],
+          status: ['status'],
+          moduleId: ['module id','moduleid','course id'],
+          moduleName: ['module name','coursename','course name','training name'],
+          moduleReference: ['module reference','module ref','module code','course code','module short'],
+          completionDate: ['completion date','completed on','completion','date completed','completion datetime'],
+          archived: ['archived record','archived','is archived']
+        };
+
+        function normalizeHeaderKey(value){
+          return String(value||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+        }
+
+        function detectImportDelimiter(text){
+          const lines = text.split(/\r?\n/);
+          const sample = lines.find(line=>line.trim().length>0) || '';
+          const candidates = ['	', ',', ';', '|'];
+          let best = ',';
+          let bestCount = -1;
+          candidates.forEach(delim=>{
+            const count = sample ? sample.split(delim).length - 1 : 0;
+            if(count > bestCount){
+              best = delim;
+              bestCount = count;
+            }
+          });
+          return bestCount > 0 ? best : '	';
+        }
+
+        function splitImportRows(text, delimiter){
+          const rows = [];
+          let current = [];
+          let value = '';
+          let inQuotes = false;
+          for(let i=0;i<text.length;i+=1){
+            const ch = text[i];
+            if(ch === '"'){
+              if(inQuotes && text[i+1] === '"'){
+                value += '"';
+                i += 1;
+              }else{
+                inQuotes = !inQuotes;
+              }
+            }else if(!inQuotes && ch === delimiter){
+              current.push(value);
+              value = '';
+            }else if(!inQuotes && (ch === '\n' || ch === '\r')){
+              if(ch === '\r' && text[i+1] === '\n') i += 1;
+              current.push(value);
+              rows.push(current);
+              current = [];
+              value = '';
+            }else{
+              value += ch;
+            }
+          }
+          current.push(value);
+          rows.push(current);
+          return rows.map(row=>row.map(cell=>String(cell||'').trim()));
+        }
+
+        function parseImportContent(text){
+          const raw = String(text||'').replace(/^\uFEFF/, '');
+          if(!raw.trim()) throw new Error('Import file is empty.');
+          const delimiter = detectImportDelimiter(raw);
+          const rows = splitImportRows(raw, delimiter);
+          while(rows.length && rows[0].every(cell=>!cell)){
+            rows.shift();
+          }
+          if(rows.length === 0) throw new Error('Import file is empty.');
+          const header = rows.shift();
+          const headerKeys = header.map(normalizeHeaderKey);
+          const filteredRows = rows.filter(row=> row.some(cell=>cell));
+          if(filteredRows.length === 0) throw new Error('No data rows found in import file.');
+          return {header, headerKeys, rows: filteredRows};
+        }
+
+        function resolveImportField(row, lookup, key){
+          const aliases = importHeaderAliases[key] || [key];
+          for(const name of aliases){
+            const normalized = normalizeHeaderKey(name);
+            if(lookup.has(normalized)){
+              const idx = lookup.get(normalized);
+              return row[idx] || '';
+            }
+          }
+          return '';
+        }
+
+        function applyCompletionRecord(store, metaStore, empId, classId, done, meta){
+          if(!store || !empId || !classId) return false;
+          const previousBucket = store[empId];
+          const wasDone = !!(previousBucket && previousBucket[classId]);
+          const targetDone = !!done;
+
+          if(targetDone){
+            const bucket = ensureBucket(store, empId);
+            bucket[classId] = true;
+            if(meta !== undefined && meta !== null && metaStore){
+              ensureBucket(metaStore, empId)[classId] = meta;
+            }
+          }else if(previousBucket){
+            if(previousBucket[classId]){
+              delete previousBucket[classId];
+            }
+            if(metaStore && metaStore[empId]){
+              delete metaStore[empId][classId];
+              if(Object.keys(metaStore[empId]).length === 0){
+                delete metaStore[empId];
+              }
+            }
+          }
+
+          if(store[empId] && Object.keys(store[empId]).length === 0){
+            delete store[empId];
+          }
+
+          const changed = wasDone !== targetDone;
+          if(store === state.completion && changed){
+            bumpCompletionCount(empId, targetDone ? 1 : -1);
+          }
+
+          return changed;
+        }
+
+        async function processImportText(text, options={}){
+          const opts = options || {};
+          const dryRun = !!(opts.preview || opts.dryRun);
+          const fileName = opts.fileName ? String(opts.fileName) : '';
+          const summary = {
+            rows: 0,
+            completions: 0,
+            newlyCompleted: 0,
+            employeesAdded: 0,
+            classesAdded: 0,
+            skipped: 0,
+            warnings: [],
+            fileName
+          };
+
+          const parsed = parseImportContent(text);
+          const headerLookup = new Map();
+          parsed.headerKeys.forEach((key, index)=>{
+            if(key) headerLookup.set(key, index);
+          });
+
+          const hasModuleColumn = importHeaderAliases.moduleName.some(alias=>headerLookup.has(normalizeHeaderKey(alias)))
+            || importHeaderAliases.moduleReference.some(alias=>headerLookup.has(normalizeHeaderKey(alias)));
+          if(!hasModuleColumn) throw new Error('Import file is missing a "Module Name" or "Module Reference" column.');
+          const hasEmployeeColumn = importHeaderAliases.userNumber.some(alias=>headerLookup.has(normalizeHeaderKey(alias)))
+            || importHeaderAliases.firstName.some(alias=>headerLookup.has(normalizeHeaderKey(alias)))
+            || importHeaderAliases.fullName.some(alias=>headerLookup.has(normalizeHeaderKey(alias)));
+          if(!hasEmployeeColumn) throw new Error('Import file is missing employee information (User Number or Name columns).');
+
+          const employees = dryRun ? clone(state.employees) : state.employees;
+          const classes = dryRun ? clone(state.classes) : state.classes;
+          const completionStore = dryRun ? clone(state.completion) : state.completion;
+          const metaStore = dryRun ? clone(state.completionMeta || {}) : (state.completionMeta = state.completionMeta || {});
+
+          const employeeById = new Map();
+          const employeeByExternal = new Map();
+          const employeeByName = new Map();
+          const registerEmployee = (emp)=>{
+            if(!emp || !emp.id) return;
+            employeeById.set(emp.id, emp);
+            if(emp.externalId){
+              employeeByExternal.set(String(emp.externalId).toLowerCase(), emp);
+            }
+            if(emp.name){
+              employeeByName.set(String(emp.name).toLowerCase(), emp);
+            }
+          };
+          employees.forEach(registerEmployee);
+
+          const classById = new Map();
+          const classByShort = new Map();
+          const classByName = new Map();
+          const classByModuleId = new Map();
+          const registerClass = (cls)=>{
+            if(!cls || !cls.id) return;
+            classById.set(cls.id, cls);
+            if(cls.short) classByShort.set(String(cls.short).toLowerCase(), cls);
+            if(cls.name) classByName.set(String(cls.name).toLowerCase(), cls);
+            if(cls.moduleId) classByModuleId.set(String(cls.moduleId).toLowerCase(), cls);
+            if(cls.moduleReference) classByShort.set(String(cls.moduleReference).toLowerCase(), cls);
+          };
+          classes.forEach(registerClass);
+
+          const changedRecords = new Map();
+          const originalClassRef = dryRun ? state.classes : null;
+          const originalCounter = dryRun ? customClassCounter : null;
+          if(dryRun){
+            state.classes = classes;
+          }
+
+          const totalRows = parsed.rows.length;
+          const shouldYield = !dryRun && totalRows > 200;
+          const yieldInterval = 200;
+
+          try{
+            for(let index=0; index<totalRows; index+=1){
+              const row = parsed.rows[index];
+              summary.rows += 1;
+
+              const userNumber = resolveImportField(row, headerLookup, 'userNumber');
+              const firstName = resolveImportField(row, headerLookup, 'firstName');
+              const lastName = resolveImportField(row, headerLookup, 'lastName');
+              const fullName = (()=>{
+                const combined = `${firstName} ${lastName}`.trim();
+                if(combined) return combined;
+                const fallback = resolveImportField(row, headerLookup, 'fullName');
+                return fallback || userNumber || '';
+              })();
+
+              if(!fullName){
+                summary.skipped += 1;
+                if(summary.warnings.length < 5){
+                  summary.warnings.push(`Row ${index+2}: missing employee name.`);
+                }
+                if(shouldYield && index > 0 && index % yieldInterval === 0){
+                  await idlePause();
+                }
+                continue;
+              }
+
+              let employee = null;
+              if(userNumber){
+                employee = employeeByExternal.get(String(userNumber).toLowerCase()) || null;
+              }
+              if(!employee){
+                employee = employeeByName.get(fullName.toLowerCase()) || null;
+              }
+              if(!employee){
+                const baseId = userNumber ? `ext-${userNumber}` : `import-${slug(fullName) || Date.now().toString(36)}`;
+                let candidate = baseId;
+                let counter = 1;
+                while(employeeById.has(candidate)){
+                  candidate = `${baseId}-${counter+=1}`;
+                }
+                employee = {
+                  id: candidate,
+                  name: fullName,
+                  title: resolveImportField(row, headerLookup, 'jobCode') || ''
+                };
+                if(userNumber) employee.externalId = userNumber;
+                const location = resolveImportField(row, headerLookup, 'location');
+                if(location) employee.location = location;
+                const orgCode = resolveImportField(row, headerLookup, 'orgCode');
+                if(orgCode) employee.organizationCode = orgCode;
+                const status = resolveImportField(row, headerLookup, 'status');
+                if(status) employee.status = status;
+                employees.push(employee);
+                registerEmployee(employee);
+                summary.employeesAdded += 1;
+              }else{
+                if(userNumber && !employee.externalId){
+                  employee.externalId = userNumber;
+                  employeeByExternal.set(String(userNumber).toLowerCase(), employee);
+                }
+                const jobCode = resolveImportField(row, headerLookup, 'jobCode');
+                if(jobCode) employee.title = jobCode;
+                const location = resolveImportField(row, headerLookup, 'location');
+                if(location) employee.location = location;
+              }
+
+              const moduleRef = resolveImportField(row, headerLookup, 'moduleReference');
+              const moduleName = resolveImportField(row, headerLookup, 'moduleName') || moduleRef;
+              const moduleId = resolveImportField(row, headerLookup, 'moduleId');
+              if(!moduleRef && !moduleName){
+                summary.skipped += 1;
+                if(summary.warnings.length < 5){
+                  summary.warnings.push(`Row ${index+2}: missing module reference/name.`);
+                }
+                if(shouldYield && index > 0 && index % yieldInterval === 0){
+                  await idlePause();
+                }
+                continue;
+              }
+
+              let cls = null;
+              if(moduleRef) cls = classByShort.get(moduleRef.toLowerCase()) || null;
+              if(!cls && moduleId) cls = classByModuleId.get(moduleId.toLowerCase()) || null;
+              if(!cls && moduleName) cls = classByName.get(moduleName.toLowerCase()) || null;
+              if(!cls){
+                const payload = {
+                  short: moduleRef || moduleName || 'Imported Class',
+                  name: moduleName || moduleRef || 'Imported Class',
+                  area: 'Imported',
+                  // Imported courses should not be assigned to a custom position; use "All" so they apply to everyone
+                  group: 'All',
+                  level: '',
+                  step: ''
+                };
+                const id = generateClassId(payload);
+                const newClass = {...payload, id};
+                if(moduleId) newClass.moduleId = moduleId;
+                if(moduleRef) newClass.moduleReference = moduleRef;
+                classes.push(newClass);
+                registerClass(newClass);
+                summary.classesAdded += 1;
+                customClassCounter = state.classes.length;
+                cls = newClass;
+              }else{
+                if(moduleId && !cls.moduleId) cls.moduleId = moduleId;
+                if(moduleRef && !cls.moduleReference) cls.moduleReference = moduleRef;
+                if(moduleRef && !cls.short) cls.short = moduleRef;
+                if(moduleRef) classByShort.set(moduleRef.toLowerCase(), cls);
+                if(moduleId) classByModuleId.set(moduleId.toLowerCase(), cls);
+              }
+
+              const completionDate = resolveImportField(row, headerLookup, 'completionDate');
+              const archived = resolveImportField(row, headerLookup, 'archived');
+              if(archived && /^y(es)?$/i.test(archived)){
+                summary.skipped += 1;
+                if(shouldYield && index > 0 && index % yieldInterval === 0){
+                  await idlePause();
+                }
+                continue;
+              }
+              if(!completionDate){
+                summary.skipped += 1;
+                if(shouldYield && index > 0 && index % yieldInterval === 0){
+                  await idlePause();
+                }
+                continue;
+              }
+
+              const empId = employee.id;
+              const classId = cls.id;
+              const already = !!(completionStore[empId]?.[classId]);
+              const location = resolveImportField(row, headerLookup, 'location');
+              const status = resolveImportField(row, headerLookup, 'status');
+              const orgCode = resolveImportField(row, headerLookup, 'orgCode');
+              const meta = {
+                completionDate,
+                moduleReference: moduleRef || cls.short || cls.name,
+                moduleName: moduleName || cls.name,
+                moduleId: moduleId || cls.moduleId,
+                fileName: fileName || undefined,
+                importedAt: new Date().toISOString(),
+                location: location || undefined,
+                status: status || undefined,
+                organizationCode: orgCode || undefined,
+                userNumber: userNumber || undefined
+              };
+
+              applyCompletionRecord(completionStore, metaStore, empId, classId, true, meta);
+              summary.completions += 1;
+              if(!already) summary.newlyCompleted += 1;
+              if(!already && !dryRun){
+                changedRecords.set(`${empId}|${classId}`, {employeeId: empId, classId, done: true});
+              }
+
+              if(shouldYield && index > 0 && index % yieldInterval === 0){
+                await idlePause();
+              }
+            }
+
+            if(dryRun){
+              return summary;
+            }
+
+            if(summary.classesAdded > 0){
+              refreshAfterClassChange(true);
+            }else{
+              saveState();
+              if(activeTab === 'overview') buildOverview();
+              if(activeTab === 'employee') renderDetail();
+            }
+
+            if(summary.employeesAdded > 0){
+              const previous = elements.empFilters.empSel.value;
+              buildEmpPicker();
+              if(previous && state.employees.some(emp=>emp.id === previous)){
+                elements.empFilters.empSel.value = previous;
+              }
+            }
+
+            if(activeTab === 'employee'){
+              renderDetail();
+            }
+
+            if(changedRecords.size && onChange){
+              changedRecords.forEach(record=>{
+                try{ onChange(record); }
+                catch(err){ console.error('TrainingTracker onChange error', err); }
+              });
+            }
+
+            return summary;
+          }finally{
+            if(dryRun){
+              state.classes = originalClassRef;
+              customClassCounter = originalCounter;
+            }
+          }
+        }
+
+        function showImportSummary(result){
+          if(!elements.importStatus) return;
+          if(!result){
+            elements.importStatus.textContent = '';
+            elements.importStatus.classList.remove('tt-import-error');
+            elements.importStatus.removeAttribute('title');
+            return;
+          }
+          if(result.error){
+            elements.importStatus.textContent = result.error;
+            elements.importStatus.classList.add('tt-import-error');
+            elements.importStatus.title = result.details || '';
+            return;
+          }
+          const parts = [];
+          if(result.fileName) parts.push(result.fileName);
+          parts.push(`${result.rows} row${result.rows===1?'':'s'}`);
+          parts.push(`${result.completions} completion${result.completions===1?'':'s'}`);
+          if(result.newlyCompleted){
+            parts.push(`${result.newlyCompleted} new`);
+          }
+          if(result.employeesAdded) parts.push(`${result.employeesAdded} new employee${result.employeesAdded===1?'':'s'}`);
+          if(result.classesAdded) parts.push(`${result.classesAdded} new class${result.classesAdded===1?'':'es'}`);
+          if(result.skipped) parts.push(`${result.skipped} skipped`);
+          elements.importStatus.textContent = parts.join(' • ');
+          if(result.warnings && result.warnings.length){
+            elements.importStatus.classList.add('tt-import-error');
+            elements.importStatus.title = result.warnings.join('\n');
+          }else{
+            elements.importStatus.classList.remove('tt-import-error');
+            elements.importStatus.removeAttribute('title');
+          }
+        }
+
+        function handleImportSelection(ev){
+          const input = ev.currentTarget;
+          const file = input?.files?.[0];
+          if(!file) return;
+          const reader = new FileReader();
+          reader.onload = async ()=>{
+            try{
+              const text = typeof reader.result === 'string'
+                ? reader.result
+                : '';
+              const summary = await processImportText(text, {fileName: file.name});
+              showImportSummary(summary);
+              // After a successful import, rebuild facet options (to update site list) and refresh views
+              buildFacetOptions();
+              // Rebuild the overview to reflect new employees/classes
+              if(activeTab === 'overview'){
+                buildOverview();
+              }
+              // Rebuild employee picker for detail view and other lists
+              buildEmpPicker();
+            }catch(err){
+              showImportSummary({error: err?.message || 'Import failed.'});
+            }
+            input.value = '';
+          };
+          reader.onerror = ()=>{
+            showImportSummary({error: 'Unable to read import file.'});
+            input.value = '';
+          };
+          reader.readAsText(file);
+        }
+
+        // Clear persisted data from localStorage and IndexedDB, then reload the page
+        function handleResetClick(){
+          const msg = 'This will clear all saved classes, completions, and employees from your browser. Continue?';
+          if(typeof window.confirm === 'function' && !window.confirm(msg)) return;
+          try {
+            if(typeof localStorage !== 'undefined'){
+              localStorage.removeItem(STORAGE_KEY);
+            }
+          }catch(err){}
+          try {
+            if(typeof indexedDB !== 'undefined'){
+              indexedDB.deleteDatabase(IDB_NAME);
+            }
+          }catch(err){}
+          // Reload the page after a short delay to ensure deletion takes effect
+          setTimeout(()=>{
+            window.location.reload();
+          }, 100);
+        }
+
+        function getCatalogFilterState(){
+          const filters = elements.catalogFilters;
+          return {
+            term: (filters.search.value || '').toLowerCase(),
+            cat: filters.cat.value,
+            group: filters.group.value,
+            level: filters.level.value,
+            step: filters.step.value
+          };
+        }
+
+        function passesCatalogFilters(cls, filters){
+          if(filters.cat && cls.area !== filters.cat) return false;
+          if(filters.group && cls.group !== filters.group) return false;
+          if(filters.level && cls.level !== filters.level) return false;
+          if(filters.step && String(cls.step||'') !== filters.step) return false;
+          if(filters.term){
+            const haystacks = [cls.short, cls.name];
+            const match = haystacks.some(value=> String(value||'').toLowerCase().includes(filters.term));
+            if(!match) return false;
+          }
+          return true;
+        }
+
+        function refreshAfterClassChange(rebuildCatalog=false){
+          state.catalog = enrichCatalog(state.classes);
+          buildFacetOptions();
+          saveState();
+          if(activeTab === 'overview') buildOverview();
+          if(activeTab === 'employee') renderDetail();
+          if(rebuildCatalog) buildCatalog();
+        }
+
+        function finalizeCatalogRow(row){
+          if(!row) return;
+          if(row.dataset.newRow === 'true'){
+            const values = collectCatalogRowValues(row);
+            if(!values) return;
+            values.group = values.group || '';
+            values.positions = values.group || '';
+            values.leadership = normalizeLeadership(values.leadership, values.positions);
+            const id = generateClassId(values);
+            state.classes.push({...values, id});
+            customClassCounter = state.classes.length;
+            refreshAfterClassChange(false);
+            const newIndex = state.classes.length - 1;
+            const updated = state.catalog[newIndex];
+            const filterState = getCatalogFilterState();
+            if(!passesCatalogFilters(updated, filterState)){
+              buildCatalog();
+              return;
+            }
+            delete row.dataset.newRow;
+            row.dataset.sourceIndex = String(newIndex);
+            row.dataset.id = updated.id;
+            row.removeAttribute('data-new-row');
+            catalogColumns.forEach(col=>{
+              const input = row.querySelector(`input[data-field="${col.key}"]`);
+              if(input){
+                input.dataset.sourceIndex = String(newIndex);
+                input.value = updated[col.key] || '';
+                input.removeAttribute('data-new-row');
+              }
+            });
+            const blankRow = createCatalogRow(null, true);
+            elements.catalogBody.appendChild(blankRow);
+          }else{
+            const index = Number(row.dataset.sourceIndex);
+            if(Number.isInteger(index) && state.classes[index]){
+              const target = state.classes[index];
+              catalogColumns.forEach(col=>{
+                const input = row.querySelector(`input[data-field="${col.key}"]`);
+                if(input){
+                  const trimmed = input.value.trim();
+                  target[col.key] = trimmed;
+                  input.value = trimmed;
+                }
+              });
+              target.group = target.group || '';
+              target.positions = target.group || target.positions || '';
+              target.leadership = normalizeLeadership(target.leadership, target.positions);
+              refreshAfterClassChange(false);
+              const updated = state.catalog[index];
+              if(updated){
+                row.dataset.id = updated.id;
+                catalogColumns.forEach(col=>{
+                  const input = row.querySelector(`input[data-field="${col.key}"]`);
+                  if(input){
+                    const next = updated[col.key] || '';
+                    if(input.value !== next) input.value = next;
+                  }
+                });
+              }
+            }
+          }
+        }
+
+        function handleCatalogInput(){
+          // Intentionally noop; updates occur on blur.
+        }
+
+        function handleCatalogBlur(ev){
+          const input = ev.currentTarget;
+          const row = input.closest('tr');
+          if(!row) return;
+          const active = document.activeElement;
+          if(active && row.contains(active)) return;
+          finalizeCatalogRow(row);
+        }
+
+        function handleCatalogKeydown(ev){
+          const input = ev.currentTarget;
+          const row = input.closest('tr');
+          if(!row) return;
+          const colIndex = Number(input.dataset.colIndex || 0);
+          const rows = Array.from(elements.catalogBody.querySelectorAll('tr'));
+          const rowIndex = rows.indexOf(row);
+          if(rowIndex === -1) return;
+
+          const focusCell = (targetRowIndex, targetColIndex)=>{
+            if(targetRowIndex < 0 || targetRowIndex >= rows.length) return;
+            const targetRow = rows[targetRowIndex];
+            const targetInput = targetRow?.querySelector(`input[data-col-index="${targetColIndex}"]`);
+            if(targetInput){
+              targetInput.focus();
+              targetInput.select();
+            }
+          };
+
+          if(ev.key === 'ArrowRight'){
+            const atEnd = typeof input.selectionStart === 'number'
+              ? (input.selectionStart === input.value.length && input.selectionEnd === input.value.length)
+              : true;
+            if(!atEnd) return;
+            ev.preventDefault();
+            let nextCol = colIndex + 1;
+            let targetRowIndex = rowIndex;
+            if(nextCol >= catalogColumns.length){
+              nextCol = 0;
+              targetRowIndex = Math.min(rowIndex + 1, rows.length - 1);
+            }
+            focusCell(targetRowIndex, nextCol);
+          }else if(ev.key === 'ArrowLeft'){
+            const atStart = typeof input.selectionStart === 'number'
+              ? (input.selectionStart === 0 && input.selectionEnd === 0)
+              : true;
+            if(!atStart) return;
+            ev.preventDefault();
+            let prevCol = colIndex - 1;
+            let targetRowIndex = rowIndex;
+            if(prevCol < 0){
+              prevCol = catalogColumns.length - 1;
+              targetRowIndex = Math.max(rowIndex - 1, 0);
+            }
+            focusCell(targetRowIndex, prevCol);
+          }else if(ev.key === 'ArrowDown'){
+            ev.preventDefault();
+            focusCell(Math.min(rowIndex + 1, rows.length - 1), colIndex);
+          }else if(ev.key === 'ArrowUp'){
+            ev.preventDefault();
+            focusCell(Math.max(rowIndex - 1, 0), colIndex);
+          }
+        }
+
+        function createCatalogRow(data, isNew=false){
+          const tr = document.createElement('tr');
+          if(isNew){
+            tr.dataset.newRow = 'true';
+          }else if(data){
+            tr.dataset.sourceIndex = String(data.__index);
+            tr.dataset.id = data.id;
+          }
+          catalogColumns.forEach((col, colIndex)=>{
+            const td = document.createElement('td');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.autocomplete = 'off';
+            input.spellcheck = false;
+            input.value = data ? (data[col.key] || '') : '';
+            if(isNew && col.placeholder) input.placeholder = col.placeholder;
+            input.dataset.field = col.key;
+            input.dataset.colIndex = String(colIndex);
+            if(!isNew && data){
+              input.dataset.sourceIndex = String(data.__index);
+            }else{
+              input.dataset.newRow = 'true';
+            }
+            input.addEventListener('keydown', handleCatalogKeydown);
+            input.addEventListener('input', handleCatalogInput);
+            input.addEventListener('blur', handleCatalogBlur);
+            input.addEventListener('focus', ()=>{
+              requestAnimationFrame(()=>input.select());
+            });
+            td.appendChild(input);
+            tr.appendChild(td);
+          });
+          return tr;
+        }
+
+        function clearSelect(select){
+          while(select.firstChild) select.removeChild(select.firstChild);
+        }
+
+      function setSelectOptions(select, optionsList, includeAll=true){
+        clearSelect(select);
+        if(includeAll){
+          const opt = document.createElement('option');
+          opt.value = '';
+          opt.textContent = 'All';
+          select.appendChild(opt);
+        }
+        optionsList.forEach(value=>{
+          const opt = document.createElement('option');
+          opt.value = value;
+          opt.textContent = value;
+          select.appendChild(opt);
+        });
+      }
+
+      function restoreSelectValue(select, value){
+        if(!select) return;
+        const options = Array.from(select.options || []);
+        if(value && options.some(opt=>opt.value === value)){
+          select.value = value;
+        }else if(value === ''){
+          select.value = '';
+        }
+      }
+
+        function buildFacetOptions(){
+          const prev = {
+            classId: elements.classFilter.value,
+            overviewCat: elements.catFilter.value,
+            overviewGroup: elements.groupFilter.value,
+            overviewLevel: elements.levelFilter.value,
+            overviewStep: elements.stepFilter.value,
+            // Preserve previous site filter selection for overview
+            overviewSite: elements.siteFilter ? elements.siteFilter.value : '',
+            empCat: elements.empFilters.empCat.value,
+            empGroup: elements.empFilters.empGroup.value,
+            empLevel: elements.empFilters.empLevel.value,
+            empStep: elements.empFilters.empStep.value,
+            catalogCat: elements.catalogFilters.cat.value,
+            catalogGroup: elements.catalogFilters.group.value,
+            catalogLevel: elements.catalogFilters.level.value,
+            catalogStep: elements.catalogFilters.step.value
+          };
+
+          const cats = uniqueSorted(state.catalog.map(c=>c.area||''));
+          const groups = uniqueSorted(state.catalog.map(c=>c.group||''));
+          const levels = uniqueSorted(state.catalog.map(c=>c.level||''));
+          const steps = uniqueSorted(state.catalog.map(c=>c.step||''));
+          // Gather unique site codes from employees (organization code)
+          const sites = uniqueSorted((state.employees || []).map(e=>e && e.organizationCode ? String(e.organizationCode) : '').filter(x=>x));
+
+          clearSelect(elements.classFilter);
+          const allOption = document.createElement('option');
+          allOption.value = '';
+          allOption.textContent = 'All';
+          elements.classFilter.appendChild(allOption);
+          state.catalog.forEach(cls=>{
+            const opt = document.createElement('option');
+            opt.value = cls.id;
+            opt.textContent = cls.short;
+            opt.title = cls.name;
+            elements.classFilter.appendChild(opt);
+          });
+          restoreSelectValue(elements.classFilter, prev.classId);
+
+          setSelectOptions(elements.catFilter, cats, true);
+          restoreSelectValue(elements.catFilter, prev.overviewCat);
+          setSelectOptions(elements.groupFilter, groups, true);
+          restoreSelectValue(elements.groupFilter, prev.overviewGroup);
+          setSelectOptions(elements.levelFilter, levels, true);
+          restoreSelectValue(elements.levelFilter, prev.overviewLevel);
+          setSelectOptions(elements.stepFilter, steps, true);
+          restoreSelectValue(elements.stepFilter, prev.overviewStep);
+
+          // Populate site filter options and restore previous selection
+          if(elements.siteFilter){
+            setSelectOptions(elements.siteFilter, sites, true);
+            restoreSelectValue(elements.siteFilter, prev.overviewSite);
+          }
+
+          const empFilters = elements.empFilters;
+          setSelectOptions(empFilters.empCat, cats, true);
+          restoreSelectValue(empFilters.empCat, prev.empCat);
+          setSelectOptions(empFilters.empGroup, groups, true);
+          restoreSelectValue(empFilters.empGroup, prev.empGroup);
+          setSelectOptions(empFilters.empLevel, levels, true);
+          restoreSelectValue(empFilters.empLevel, prev.empLevel);
+          setSelectOptions(empFilters.empStep, steps, true);
+          restoreSelectValue(empFilters.empStep, prev.empStep);
+
+          const catalogFilters = elements.catalogFilters;
+          setSelectOptions(catalogFilters.cat, cats, true);
+          restoreSelectValue(catalogFilters.cat, prev.catalogCat);
+          setSelectOptions(catalogFilters.group, groups, true);
+          restoreSelectValue(catalogFilters.group, prev.catalogGroup);
+          setSelectOptions(catalogFilters.level, levels, true);
+          restoreSelectValue(catalogFilters.level, prev.catalogLevel);
+          setSelectOptions(catalogFilters.step, steps, true);
+          restoreSelectValue(catalogFilters.step, prev.catalogStep);
+        }
+
+        function buildEmpPicker(){
+          const select = elements.empFilters.empSel;
+          clearSelect(select);
+          state.employees.forEach(emp=>{
+            const opt = document.createElement('option');
+            opt.value = emp.id;
+            opt.textContent = emp.name;
+            select.appendChild(opt);
+          });
+        }
+
+        function markCell(value){
+          const span = document.createElement('span');
+          span.className = value ? 'tt-status-ok' : 'tt-status-miss';
+          span.textContent = value ? '✓' : '✗';
+          return span;
+        }
+
+        function computeProgress(empId){
+          const total = state.catalog.length;
+          if(total === 0) return 0;
+          const completed = state.completionCounts[empId] || 0;
+          const pct = Math.round((completed/total)*100);
+          return Math.max(0, Math.min(100, pct));
+        }
+
+        function cancelOverviewChunks(){
+          if(overviewChunkCancel){
+            cancelIdleHandle(overviewChunkCancel);
+            overviewChunkCancel = null;
+          }
+        }
+
+        function setOverviewEmpty(message){
+          cancelOverviewChunks();
+          elements.overviewEmpty.textContent = message;
+          elements.overviewEmpty.classList.remove('tt-hidden');
+          elements.overviewTable.classList.add('tt-hidden');
+        }
+
+        function hideOverviewEmpty(){
+          elements.overviewEmpty.classList.add('tt-hidden');
+          elements.overviewTable.classList.remove('tt-hidden');
+        }
+
+        function renderOverviewRows(classList){
+          cancelOverviewChunks();
+          // Filter employees by the selected site filter before rendering rows
+          const selectedSite = elements.siteFilter ? String(elements.siteFilter.value || '') : '';
+          const rows = (state.employees || []).filter(emp=>{
+            if(!selectedSite) return true;
+            // Compare organizationCode as strings; treat undefined as empty string
+            const org = emp && emp.organizationCode ? String(emp.organizationCode) : '';
+            return org === selectedSite;
+          }).map(emp=>({
+            emp,
+            bucket: state.completion[emp.id] || null
+          }));
+          if(rows.length === 0) return;
+          const body = elements.overviewBody;
+          const perRowCost = Math.max(1, classList.length + 1);
+          const chunkSize = Math.max(5, Math.min(50, Math.floor(900 / perRowCost)));
+          let index = 0;
+
+          const buildRow = (rowData)=>{
+            const {emp, bucket} = rowData;
+            const tr = document.createElement('tr');
+            tr.dataset.empId = emp.id;
+            tr.tabIndex = 0;
+            const nameCell = document.createElement('th');
+            nameCell.scope = 'row';
+            nameCell.className = 'tt-emp-col';
+            nameCell.textContent = emp.name;
+            tr.appendChild(nameCell);
+            classList.forEach(cls=>{
+              const td = document.createElement('td');
+              td.className = 'tt-cls-col';
+              const done = !!(bucket && bucket[cls.id]);
+              td.appendChild(markCell(done));
+              tr.appendChild(td);
+            });
+            tr.appendChild(buildProgressCell(emp.id));
+            attachRowInteraction(tr, emp.id);
+            return tr;
+          };
+
+          const run = (deadline)=>{
+            overviewChunkCancel = null;
+            const frag = document.createDocumentFragment();
+            let processed = 0;
+            while(index < rows.length && processed < chunkSize && (!deadline || deadline.timeRemaining() > 4)){
+              frag.appendChild(buildRow(rows[index]));
+              index += 1;
+              processed += 1;
+            }
+            if(frag.childNodes.length){
+              body.appendChild(frag);
+            }
+            if(index < rows.length){
+              overviewChunkCancel = scheduleIdle(run);
+            }
+          };
+
+          overviewChunkCancel = scheduleIdle(run);
+        }
+
+        function buildOverview(){
+          const head = elements.overviewHead;
+          const body = elements.overviewBody;
+          head.textContent = '';
+          body.textContent = '';
+          cancelOverviewChunks();
+
+          const selectedClassId = elements.classFilter.value;
+          const cat = elements.catFilter.value;
+          const group = elements.groupFilter.value;
+          const level = elements.levelFilter.value;
+          const step = elements.stepFilter.value;
+
+          const filtered = state.catalog.filter(c=>
+            (!cat || c.area===cat) &&
+            (!group || c.group===group) &&
+            (!level || c.level===level) &&
+            (!step || String(c.step)===String(step))
+          );
+
+          if(selectedClassId){
+            const cls = state.catalog.find(c=>c.id===selectedClassId);
+            if(!cls){
+              setOverviewEmpty('No classes match the current filters.');
+              return;
+            }
+            hideOverviewEmpty();
+            const headRow = document.createElement('tr');
+            const thEmp = document.createElement('th');
+            thEmp.scope = 'col';
+            thEmp.className = 'tt-emp-col';
+            thEmp.textContent = 'Employee';
+            const thCls = document.createElement('th');
+            thCls.scope = 'col';
+            thCls.className = 'tt-cls-col';
+            thCls.textContent = cls.short;
+            thCls.title = cls.name;
+            const thProg = document.createElement('th');
+            thProg.scope = 'col';
+            thProg.className = 'tt-prog-col';
+            thProg.textContent = 'Progress';
+            headRow.append(thEmp, thCls, thProg);
+            head.appendChild(headRow);
+            renderOverviewRows([cls]);
+            return;
+          }
+
+          if(filtered.length === 0){
+            setOverviewEmpty('No classes match the current filters.');
+            return;
+          }
+          hideOverviewEmpty();
+
+          const headRow = document.createElement('tr');
+          const thEmp = document.createElement('th');
+          thEmp.scope = 'col';
+          thEmp.className = 'tt-emp-col';
+          thEmp.textContent = 'Employee';
+          headRow.appendChild(thEmp);
+          filtered.forEach(cls=>{
+            const th = document.createElement('th');
+            th.scope = 'col';
+            th.className = 'tt-cls-col';
+            th.textContent = cls.short;
+            th.title = `${cls.name}${cls.area ? ' — '+cls.area : ''}${cls.level ? ' • '+cls.level : ''}${cls.step ? ' • Step '+cls.step : ''}`;
+            headRow.appendChild(th);
+          });
+          const thProg = document.createElement('th');
+          thProg.scope = 'col';
+          thProg.className = 'tt-prog-col';
+          thProg.textContent = 'Progress';
+          headRow.appendChild(thProg);
+          head.appendChild(headRow);
+          renderOverviewRows(filtered);
+        }
+
+        function buildProgressCell(empId){
+          const pct = computeProgress(empId);
+          const td = document.createElement('td');
+          td.className = 'tt-prog-col';
+          const bar = document.createElement('div');
+          bar.className = 'tt-progress';
+          const span = document.createElement('span');
+          span.style.width = `${pct}%`;
+          bar.appendChild(span);
+          const text = document.createElement('div');
+          text.textContent = `${pct}%`;
+          td.append(bar, text);
+          return td;
+        }
+
+        function attachRowInteraction(row, empId){
+          const activate = ()=>{
+            elements.empFilters.empSel.value = empId;
+            setTab('employee');
+          };
+          row.addEventListener('click', activate);
+          row.addEventListener('keydown', ev=>{
+            if(ev.key === 'Enter' || ev.key === ' '){
+              ev.preventDefault();
+              activate();
+            }
+          });
+        }
+
+        function setTab(which){
+          activeTab = which;
+          const panels = {
+            overview: elements.overviewSection,
+            employee: elements.employeeSection,
+            catalog: elements.catalogSection,
+            emplist: elements.empListSection,
+            joblist: elements.jobListSection
+          };
+          Object.values(panels).forEach(p=>{
+            if(p) p.classList.add('tt-hidden');
+          });
+          if(panels[which]) panels[which].classList.remove('tt-hidden');
+          // Reset aria-current on all tabs
+          elements.tabOverview.removeAttribute('aria-current');
+          elements.tabEmployee.removeAttribute('aria-current');
+          elements.tabCatalog.removeAttribute('aria-current');
+          if(elements.tabEmpList) elements.tabEmpList.removeAttribute('aria-current');
+          if(elements.tabJobList) elements.tabJobList.removeAttribute('aria-current');
+          // Set aria-current on the selected tab
+          if(which === 'overview') elements.tabOverview.setAttribute('aria-current','page');
+          if(which === 'employee') elements.tabEmployee.setAttribute('aria-current','page');
+          if(which === 'catalog') elements.tabCatalog.setAttribute('aria-current','page');
+          if(which === 'emplist' && elements.tabEmpList) elements.tabEmpList.setAttribute('aria-current','page');
+          if(which === 'joblist' && elements.tabJobList) elements.tabJobList.setAttribute('aria-current','page');
+          // Build content for the selected tab
+          if(which === 'overview') buildOverview();
+          if(which === 'employee') renderDetail();
+          if(which === 'catalog') buildCatalog();
+          if(which === 'emplist') buildEmpList();
+          if(which === 'joblist') buildJobList();
+        }
+
+        function updateStatusButton(row, empId, classId){
+          const btn = row.querySelector('.tt-statusbtn');
+          const done = !!(state.completion[empId]?.[classId]);
+          btn.setAttribute('aria-pressed', done ? 'true' : 'false');
+          btn.innerHTML = done ? checkSvg : '';
+          btn.title = done ? 'Mark incomplete' : 'Mark complete';
+        }
+
+        function updateMeta(row, empId, classId){
+          const meta = row.querySelector('.tt-summary .tt-meta');
+          if(!meta) return;
+          const done = !!(state.completion[empId]?.[classId]);
+          const info = getCompletionMeta(empId, classId);
+          if(done){
+            const parts = ['Completed'];
+            if(info?.completionDate){
+              const pretty = formatCompletionDate(info.completionDate);
+              if(pretty) parts.push(pretty);
+            }
+            if(info?.location){
+              parts.push(info.location);
+            }
+            meta.textContent = parts.join(' • ');
+            if(info){
+              const hints = [];
+              if(info.fileName) hints.push(`Source: ${info.fileName}`);
+              if(info.completionDate) hints.push(`Recorded: ${info.completionDate}`);
+              if(info.moduleReference) hints.push(`Module: ${info.moduleReference}`);
+              meta.title = hints.join('\n');
+            }else{
+              meta.removeAttribute('title');
+            }
+          }else{
+            meta.textContent = 'Not completed';
+            meta.removeAttribute('title');
+          }
+        }
+
+        function buildRowCard(empId, cls){
+          const row = document.createElement('div');
+          row.className = 'tt-rowcard';
+          row.dataset.rowkey = `${empId}|${cls.id}`;
+
+          const statusBtn = document.createElement('button');
+          statusBtn.className = 'tt-statusbtn';
+          statusBtn.type = 'button';
+          statusBtn.setAttribute('aria-pressed','false');
+          statusBtn.title = 'Mark complete';
+
+          const summaryWrap = document.createElement('div');
+          summaryWrap.className = 'tt-summary';
+          const title = document.createElement('div');
+          title.className = 'tt-title';
+          title.textContent = cls.name;
+          const meta = document.createElement('div');
+          meta.className = 'tt-meta';
+          summaryWrap.append(title, meta);
+
+          row.append(statusBtn, summaryWrap);
+
+          updateStatusButton(row, empId, cls.id);
+          updateMeta(row, empId, cls.id);
+
+          statusBtn.addEventListener('click', ev=>{
+            ev.preventDefault();
+            toggleCompletion(empId, cls.id);
+            updateStatusButton(row, empId, cls.id);
+            updateMeta(row, empId, cls.id);
+          });
+
+          return row;
+        }
+
+        function renderDetail(){
+          const empId = elements.empFilters.empSel.value || state.employees[0]?.id;
+          if(!empId) return;
+          elements.empFilters.empSel.value = empId;
+          const cat = elements.empFilters.empCat.value;
+          const group = elements.empFilters.empGroup.value;
+          const level = elements.empFilters.empLevel.value;
+          const step = elements.empFilters.empStep.value;
+          const list = state.catalog
+            .filter(c=> (!cat || c.area===cat) && (!group || c.group===group) && (!level || c.level===level) && (!step || String(c.step)===String(step)))
+            .sort((a,b)=>{
+              const orderA = Number.isFinite(a.__categoryOrder) ? a.__categoryOrder : Number.POSITIVE_INFINITY;
+              const orderB = Number.isFinite(b.__categoryOrder) ? b.__categoryOrder : Number.POSITIVE_INFINITY;
+              if(orderA !== orderB) return orderA - orderB;
+              const areaA = a.area || '';
+              const areaB = b.area || '';
+              if(areaA !== areaB) return areaA.localeCompare(areaB);
+              const nameA = (a.name || a.short || '').toString();
+              const nameB = (b.name || b.short || '').toString();
+              return nameA.localeCompare(nameB);
+            });
+
+          const host = elements.detailHost;
+          host.textContent = '';
+
+          if(list.length === 0){
+            const empty = document.createElement('div');
+            empty.className = 'tt-muted';
+            empty.textContent = 'No classes match the current filters.';
+            host.appendChild(empty);
+            return;
+          }
+
+          const byArea = new Map();
+          list.forEach(cls=>{
+            const area = cls.area || 'Other';
+            if(!byArea.has(area)) byArea.set(area, []);
+            byArea.get(area).push(cls);
+          });
+
+          byArea.forEach((items, area)=>{
+            const block = document.createElement('div');
+            block.className = 'tt-area-block';
+            const heading = document.createElement('h3');
+            heading.className = 'tt-area-title';
+            heading.textContent = area;
+            const rows = document.createElement('div');
+            rows.className = 'tt-area-rows';
+            items.forEach(cls=>{
+              const row = buildRowCard(empId, cls);
+              rows.appendChild(row);
+            });
+            block.append(heading, rows);
+            host.appendChild(block);
+          });
+
+        }
+
+        function buildCatalog(){
+          const filters = getCatalogFilterState();
+          const list = state.catalog
+            .filter(cls=>passesCatalogFilters(cls, filters))
+            .sort((a,b)=> a.name.localeCompare(b.name));
+
+          elements.catalogBody.textContent = '';
+          const frag = document.createDocumentFragment();
+          list.forEach(cls=>{
+            frag.appendChild(createCatalogRow(cls, false));
+          });
+          frag.appendChild(createCatalogRow(null, true));
+          elements.catalogBody.appendChild(frag);
+        }
+
+        /**
+         * Build the employee list table. This displays each employee with basic info.
+         */
+        function buildEmpList(){
+          const body = elements.empListBody;
+          if(!body) return;
+          body.textContent = '';
+          // Sort employees alphabetically by name for readability
+          const list = (state.employees || []).slice().sort((a,b)=>{
+            const nameA = String(a?.name || '').toLowerCase();
+            const nameB = String(b?.name || '').toLowerCase();
+            return nameA.localeCompare(nameB);
+          });
+          list.forEach(emp=>{
+            const tr = document.createElement('tr');
+            const tdId = document.createElement('td');
+            // Prefer externalId for user number if available; otherwise show internal id
+            tdId.textContent = (emp && emp.externalId) ? emp.externalId : (emp?.id || '');
+            const tdName = document.createElement('td');
+            tdName.textContent = emp?.name || '';
+            const tdOrg = document.createElement('td');
+            tdOrg.textContent = emp?.organizationCode || '';
+            const tdJob = document.createElement('td');
+            tdJob.textContent = emp?.title || '';
+            const tdLoc = document.createElement('td');
+            tdLoc.textContent = emp?.location || '';
+            const tdStatus = document.createElement('td');
+            tdStatus.textContent = emp?.status || '';
+            tr.append(tdId, tdName, tdOrg, tdJob, tdLoc, tdStatus);
+            body.appendChild(tr);
+          });
+        }
+
+        /**
+         * Build the job titles table. This aggregates employees by job code.
+         */
+        function buildJobList(){
+          const body = elements.jobListBody;
+          if(!body) return;
+          body.textContent = '';
+          const counts = {};
+          (state.employees || []).forEach(emp=>{
+            const code = emp?.title || '';
+            counts[code] = (counts[code] || 0) + 1;
+          });
+          const codes = Object.keys(counts).sort((a,b)=>a.localeCompare(b));
+          codes.forEach(code=>{
+            const tr = document.createElement('tr');
+            const tdCode = document.createElement('td');
+            tdCode.textContent = code;
+            const tdCount = document.createElement('td');
+            tdCount.textContent = String(counts[code]);
+            tr.append(tdCode, tdCount);
+            body.appendChild(tr);
+          });
+        }
+
+        function runTests(){
+          const out = [];
+          const wait = (ms)=>new Promise(res=>setTimeout(res,ms));
+          const tests = [
+            { name:'T1 facets', fn: async ()=>{ buildFacetOptions(); } },
+            { name:'T2 overview', fn: async ()=>{ buildOverview(); } },
+            { name:'T3 detail', fn: async ()=>{
+                buildEmpPicker();
+                renderDetail();
+                const count = elements.detailHost.querySelectorAll('.tt-rowcard').length;
+                if(count < 1) throw new Error('no detail items');
+              }
+            },
+            { name:'T4 toggle', fn: async ()=>{
+                const firstRow = elements.detailHost.querySelector('.tt-rowcard');
+                if(!firstRow) throw new Error('no row');
+                const statusBtn = firstRow.querySelector('.tt-statusbtn');
+                const [empId, classId] = firstRow.dataset.rowkey.split('|');
+                const before = !!(state.completion[empId]?.[classId]);
+                statusBtn.click();
+                const after = !!(state.completion[empId]?.[classId]);
+                if(before === after) throw new Error('toggle failed');
+                statusBtn.click();
+              }
+            },
+            { name:'T5 single class', fn: async ()=>{
+                const classOptions = Array.from(elements.classFilter.options).filter(opt=>opt.value);
+                if(classOptions.length === 0) throw new Error('no class options');
+                elements.classFilter.value = classOptions[0].value;
+                buildOverview();
+                const headerCells = elements.overviewHead.querySelectorAll('tr th');
+                if(headerCells.length !== 3) throw new Error('expected 3 columns');
+                elements.classFilter.value = '';
+              }
+            },
+            { name:'T6 empty state', fn: async ()=>{
+                elements.classFilter.value = '';
+                elements.catFilter.value = 'Compliance';
+                elements.groupFilter.value = 'Level 1';
+                buildOverview();
+                if(elements.overviewEmpty.classList.contains('tt-hidden')){
+                  throw new Error('empty state missing');
+                }
+                elements.catFilter.value = '';
+                elements.groupFilter.value = '';
+              }
+            },
+            { name:'T7 row select', fn: async ()=>{
+                buildOverview();
+                const firstRow = elements.overviewBody.querySelector('tr');
+                if(!firstRow) throw new Error('no overview row');
+                const targetEmp = firstRow.dataset.empId;
+                firstRow.click();
+                await wait(10);
+                if(elements.empFilters.empSel.value !== targetEmp) throw new Error('employee not selected');
+                setTab('overview');
+              }
+            },
+            { name:'T8 catalog editable', fn: async ()=>{
+                buildCatalog();
+                const firstInput = elements.catalogBody.querySelector('tr input');
+                if(!firstInput) throw new Error('no catalog input');
+                if(firstInput.tagName.toLowerCase() !== 'input') throw new Error('catalog not editable');
+              }
+            },
+            { name:'T9 new row', fn: async ()=>{
+                buildCatalog();
+                const lastRow = elements.catalogBody.querySelector('tr:last-child');
+                if(!lastRow || lastRow.dataset.newRow !== 'true') throw new Error('missing new row');
+              }
+            },
+            { name:'T10 catalog size', fn: async ()=>{
+                buildCatalog();
+                const rows = elements.catalogBody.querySelectorAll('tr').length;
+                if(rows < 1) throw new Error('catalog empty');
+              }
+            },
+            { name:'T11 import preview', fn: async ()=>{
+                const sample = 'User Number\tFirst Name\tSurname\tModule Reference\tModule Name\tCompletion Date\n1000\tTest\tUser\tBLOODPTH\tBloodborne Pathogens\t2025-09-01';
+                const summary = await processImportText(sample, {preview:true});
+                if(summary.completions !== 1) throw new Error('import summary mismatch');
+                if(summary.rows !== 1) throw new Error('row count mismatch');
+              }
+            }
+          ];
+
+          (async()=>{
+            for(const test of tests){
+              try{
+                await test.fn();
+                out.push(`${test.name} ok`);
+              }catch(err){
+                out.push(`${test.name} fail ${err.message}`);
+              }
+            }
+            const pass = out.every(item=>/ ok$/.test(item));
+            if(elements.badge){
+              elements.badge.textContent = pass ? 'Self-tests: ✓' : 'Self-tests: ⚠';
+            }
+            console.log('[Training Tracker tests]', out.join(' | '));
+          })();
+        }
+
+        function wireEvents(){
+          addListener(elements.tabOverview, 'click', ()=>setTab('overview'));
+          addListener(elements.tabEmployee, 'click', ()=>setTab('employee'));
+          addListener(elements.tabCatalog, 'click', ()=>setTab('catalog'));
+          // Wire new tab buttons for employee list and job titles
+          if(elements.tabEmpList) addListener(elements.tabEmpList, 'click', ()=>setTab('emplist'));
+          if(elements.tabJobList) addListener(elements.tabJobList, 'click', ()=>setTab('joblist'));
+
+          if(elements.importButton && elements.importInput){
+            addListener(elements.importButton, 'click', ()=>{
+              elements.importInput.value = '';
+              elements.importInput.click();
+            });
+            addListener(elements.importInput, 'change', handleImportSelection);
+          }
+
+          // Attach handler for clearing persisted state
+          if(elements.resetButton){
+            addListener(elements.resetButton, 'click', handleResetClick);
+          }
+
+          addListener(elements.classFilter, 'change', ()=>buildOverview());
+          addListener(elements.catFilter, 'change', ()=>{ elements.classFilter.value=''; buildOverview(); });
+          addListener(elements.groupFilter, 'change', ()=>{ elements.classFilter.value=''; buildOverview(); });
+          addListener(elements.levelFilter, 'change', ()=>{ elements.classFilter.value=''; buildOverview(); });
+          addListener(elements.stepFilter, 'change', ()=>{ elements.classFilter.value=''; buildOverview(); });
+          // When changing site filter, reset class filter and rebuild overview
+          if(elements.siteFilter){
+            addListener(elements.siteFilter, 'change', ()=>{ elements.classFilter.value=''; buildOverview(); });
+          }
+
+          addListener(elements.catalogFilters.search, 'input', ()=>buildCatalog());
+          addListener(elements.catalogFilters.cat, 'change', ()=>buildCatalog());
+          addListener(elements.catalogFilters.group, 'change', ()=>buildCatalog());
+          addListener(elements.catalogFilters.level, 'change', ()=>buildCatalog());
+          addListener(elements.catalogFilters.step, 'change', ()=>buildCatalog());
+
+          addListener(elements.empFilters.empSel, 'change', ()=>renderDetail());
+          addListener(elements.empFilters.empCat, 'change', ()=>renderDetail());
+          addListener(elements.empFilters.empGroup, 'change', ()=>renderDetail());
+          addListener(elements.empFilters.empLevel, 'change', ()=>renderDetail());
+          addListener(elements.empFilters.empStep, 'change', ()=>renderDetail());
+        }
+
+        async function init(){
+          await loadData();
+          buildEmpPicker();
+          buildFacetOptions();
+          wireEvents();
+          showImportSummary(null);
+          setTab('overview');
+          runTests();
+        }
+
+        init().catch(err=>console.error('TrainingTracker init failed', err));
+
+        return {
+          destroy(){
+            cancelOverviewChunks();
+            listeners.forEach(({target,type,handler})=>target.removeEventListener(type,handler));
+            if(elements.app.parentNode) elements.app.parentNode.removeChild(elements.app);
+          },
+          getState(){
+            return {
+              employees: clone(state.employees),
+              classes: clone(state.classes),
+              completions: clone(state.completion),
+              completionMeta: clone(state.completionMeta)
+            };
+          },
+          setData(payload){
+            if(payload.employees) state.employees = clone(payload.employees);
+            if(payload.classes){
+              state.classes = prepareClassList(clone(payload.classes));
+              customClassCounter = state.classes.length;
+            }
+            if(payload.completions){
+              state.completion = clone(payload.completions);
+              recomputeCompletionCounts();
+            }
+            if(payload.completionMeta) state.completionMeta = clone(payload.completionMeta);
+            if(!state.completion || typeof state.completion !== 'object') state.completion = {};
+            if(!state.completionMeta || typeof state.completionMeta !== 'object') state.completionMeta = {};
+            if(!payload.completions){
+              recomputeCompletionCounts();
+            }
+            refreshAfterClassChange(true);
+            buildEmpPicker();
+            buildOverview();
+            renderDetail();
+          },
+          importText(text, options){
+            return processImportText(text, options || {});
+          },
+          setTab,
+          elements,
+          state
+        };
+      }
+
+      window.TrainingTracker = {
+        mount(rootElement, options={}){
+          if(instance){
+            instance.destroy();
+            instance = null;
+          }
+          instance = createInstance(rootElement, options);
+          return instance;
+        },
+        setData(payload){
+          if(!instance) throw new Error('TrainingTracker is not mounted');
+          instance.setData(payload || {});
+        },
+        importText(text, options){
+          if(!instance) throw new Error('TrainingTracker is not mounted');
+          return instance.importText(text, options || {});
+        },
+        getState(){
+          if(!instance) throw new Error('TrainingTracker is not mounted');
+          return instance.getState();
+        },
+        destroy(){
+          if(instance){
+            instance.destroy();
+            instance = null;
+          }
+        }
+      };
+
+      function autoMount(){
+        const mountPoint = document.getElementById('tt-root');
+        if(mountPoint && !instance){
+          window.TrainingTracker.mount(mountPoint, {});
+        }
+      }
+
+      if(document.readyState !== 'loading'){
+        autoMount();
+      }else{
+        document.addEventListener('DOMContentLoaded', autoMount, {once:true});
+      }
+    })();
+  </script>
+</body>
+</html>
