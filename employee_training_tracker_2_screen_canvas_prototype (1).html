@@ -368,14 +368,122 @@
         {id:'E3',name:'Kayden Phillips',title:'Usher'}
       ];
       const defaultClasses = [
-        {short:'Unlimited Staff', name:'Regal Unlimited - Team Member', area:'Pre-Board Courses', group:'Level 1'},
-        {short:'Fire Safety', name:'Fire Safety', area:'Compliance', group:'Compliance'},
-        {short:'ADA Staff', name:'Assisting Guests with Disabilities - Team Member', area:'Post-Hire Basics', group:'Level 1'},
-        {short:'CC-DA-ALD', name:'Closed Captioning, Descriptive Audio, and Assisted Listening Devices', area:'Post-Hire Basics', group:'Level 1'},
-        {short:'Cash Handling 1', name:'Cash Handling Part 1', area:'Food Service', group:'Level 1'},
-        {short:'Cash Handling 2', name:'Cash Handling Part 2', area:'Food Service', group:'Level 1'},
-        {short:"Raven Thorn's Popcorn Challenge", name:"Raven Thorn's Popcorn Challenge", area:'Food Service', group:'Level 1'},
-        {short:'Professionalism', name:'Professionalism: Meeting the Standards that Matter', area:'Strategic Business Mindset', group:'Level 2'}
+        {short: "Unlimited Leadership", name: "Regal Unlimited - Leadership", area: "Pre-Board Courses", categoryIndex: 2, level: "Other", positions: "Leadership", group: "Leadership"},
+        {short: "Unlimited Staff", name: "Regal Unlimited - Team Member", area: "Pre-Board Courses", categoryIndex: 2, level: "Other", positions: "Staff", group: "Staff"},
+        {short: "RBS", name: "Legal Focus: Alcohol Sales and Misuse or Responsible Beverage Server", area: "Additional Courses", categoryIndex: 11, level: "Level 1", positions: "All", group: "All"},
+        {short: "CA RBS", name: "California Responsible Beverage Server", area: "Additional Courses", categoryIndex: 11, level: "Level 1", positions: "All", group: "All"},
+        {short: "Leadership Cash Handling", name: "Leadership Cash Handling", area: "Vista Back Office", categoryIndex: 4, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Fire Safety", name: "Fire Safety", area: "Compliance", categoryIndex: 0, level: "Level 1", positions: "All", group: "All"},
+        {short: "ADA Leadership", name: "Assisting Guests with Disabilities - Leadership", area: "Post-Hire Basics", categoryIndex: 3, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "ADA Staff", name: "Assisting Guests with Disabilities - Team Member", area: "Post-Hire Basics", categoryIndex: 3, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "CC-DA-ALD", name: "Closed Captioning, Descriptive Audio, and Assisted Listening Devices", area: "Post-Hire Basics", categoryIndex: 3, level: "Level 1", positions: "All", group: "All"},
+        {short: "Anti-Harassment", name: "Anti-Harassment - State - Supervisory or Non-Supervisory", area: "Compliance", categoryIndex: 0, level: "Level 1", positions: "All", group: "All"},
+        {short: "Anti-Harassment NY/IL", name: "Anti-Harassment - IL or NY - Supervisory or Non-Supervisory", area: "Compliance", categoryIndex: 0, level: "Level 1", positions: "All", group: "All"},
+        {short: "Intro to FMLA", name: "Intro to Family Medical Leave Act (FMLA)", area: "Human Resources", categoryIndex: 8, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Regal Policy Guide", name: "Regal Policy Guide Acknowledgement/Walkthrough", area: "Policy Acknowledgement", categoryIndex: 1, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Gift Card Fraud", name: "Gift Card Fraud Awareness and Prevention", area: "Post-Hire Basics", categoryIndex: 3, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Reporting on Vision", name: "Reporting on Vision", area: "Post-Hire Basics", categoryIndex: 3, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "P&P Guest Service", name: "Balancing Personable and Professional Guest Service", area: "Strategic Business Mindset", categoryIndex: 15, level: "Level 2", positions: "All", group: "All"},
+        {short: "Data Security", name: "Data Security Awareness", area: "Post-Hire Basics", categoryIndex: 3, level: "Level 1", positions: "All", group: "All"},
+        {short: "Enhanced Concessions", name: "Enhanced Concessions: Upselling and Suggestive Selling", area: "Food Service", categoryIndex: 5, level: "Level 1", positions: "All", group: "All"},
+        {short: "Handling Difficult Guests", name: "Handling Difficult Guests", area: "Commitment to Excellence", categoryIndex: 13, level: "Level 2", positions: "All", group: "All"},
+        {short: "Maximizing Experience", name: "Maximizing Experience", area: "Food Service", categoryIndex: 5, level: "Level 1", positions: "All", group: "All"},
+        {short: "Showmanship", name: "Showmanship - Bringing Creativity to the Guest Experience", area: "Strategic Business Mindset", categoryIndex: 15, level: "Level 2", positions: "All", group: "All"},
+        {short: "Regal Experience", name: "The Regal Experience", area: "Post-Hire Basics", categoryIndex: 3, level: "Level 1", positions: "All", group: "All"},
+        {short: "TNTs", name: "Tiny Noticeable Things", area: "Post-Hire Basics", categoryIndex: 3, level: "Level 1", positions: "All", group: "All"},
+        {short: "Asset Protection", name: "Asset Protection: Retail Theft Response", area: "Post-Hire Basics", categoryIndex: 3, level: "Other", positions: "Leadership", group: "Leadership"},
+        {short: "Enhanced Guest Service", name: "Enhanced Guest Service", area: "Post-Hire Basics", categoryIndex: 3, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Difficult Conversations", name: "How to Have a Difficult Conversation", area: "Commitment to Excellence", categoryIndex: 13, level: "Level 2", positions: "Leadership", group: "Leadership"},
+        {short: "Is the Guest Always Right?", name: "Is the Guest Always Right?", area: "Commitment to Excellence", categoryIndex: 13, level: "Level 2", positions: "Leadership", group: "Leadership"},
+        {short: "On Site Event - Leadership", name: "On Site Event Manager Training", area: "Marketing", categoryIndex: 7, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Operational Excellence - TL", name: "Team Lead Strategies for Operational Excellence", area: "Post-Hire Basics", categoryIndex: 3, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Intro to InMoment", name: "Introduction to InMoment", area: "Post-Hire Basics", categoryIndex: 3, level: "Other", positions: "Leadership", group: "Leadership"},
+        {short: "Active Shooter Preparedness", name: "Active Shooter Attack Prevention and Preparedness", area: "Compliance", categoryIndex: 0, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Bloodborne Pathogens", name: "Bloodborne Pathogens", area: "Compliance", categoryIndex: 0, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "General Safety", name: "General Safety", area: "Compliance", categoryIndex: 0, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Hazcom", name: "Hazcom", area: "Compliance", categoryIndex: 0, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Ladder Safety", name: "Ladder Safety", area: "Compliance", categoryIndex: 0, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Regal Policy Guide Walkthrough", name: "", area: "Policy Acknowledgement", categoryIndex: 1, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Welcome to Regal", name: "Welcome to Regal", area: "Pre-Board Courses", categoryIndex: 2, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "General Cleaning Philosophy", name: "General Cleaning Philosophy", area: "Pre-Board Courses", categoryIndex: 2, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Movie Ratings System", name: "Movie Ratings System", area: "Pre-Board Courses", categoryIndex: 2, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Regal Crown Club", name: "Regal Crown Club", area: "Pre-Board Courses", categoryIndex: 2, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Crisis Management", name: "", area: "Pre-Board Courses", categoryIndex: 2, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Intro to STAR", name: "Intro to the STAR Program", area: "Post-Hire Basics", categoryIndex: 3, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Intro to Team Member", name: "Intro to Team Member", area: "Post-Hire Basics", categoryIndex: 3, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Regal Mobile App Basics", name: "Regal Mobile App Basics", area: "Post-Hire Basics", categoryIndex: 3, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Community Affairs", name: "Community Affairs", area: "Post-Hire Basics", categoryIndex: 3, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Workplace Behavior", name: "Workplace Behavior", area: "Post-Hire Basics", categoryIndex: 3, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Cash Management - Team Lead", name: "Introduction to Cash Management - Team Lead", area: "Vista Back Office", categoryIndex: 4, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Tipped User Training", name: "Tipped User Training", area: "Vista Back Office", categoryIndex: 4, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Processing Manual Transactions", name: "Processing Manual Transactions", area: "Vista Back Office", categoryIndex: 4, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "RCC Credit Adjustments", name: "RCC Credit Adjustments", area: "Vista Back Office", categoryIndex: 4, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Theatre Inventory Management", name: "Theatre Inventory Management", area: "Vista Back Office", categoryIndex: 4, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Cash Handling 1", name: "Cash Handling Part 1", area: "Food Service", categoryIndex: 5, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Cash Handling 2", name: "Cash Handling Part 2", area: "Food Service", categoryIndex: 5, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Ice Ice Baby", name: "Ice Ice Baby", area: "Food Service", categoryIndex: 5, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Popper Cleaning", name: "Popper Cleaning", area: "Food Service", categoryIndex: 5, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Raven Thorn's Popcorn Challenge", name: "Raven Thorn's Popcorn Challenge", area: "Food Service", categoryIndex: 5, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Food Service Administration", name: "Food Service Administration", area: "Food Service", categoryIndex: 5, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Maximizing Profits", name: "Maximizing Profits", area: "Food Service", categoryIndex: 5, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Food and Beverage Excellence", name: "Food and Beverage Excellence", area: "Food Service", categoryIndex: 5, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Film Piracy", name: "Film Piracy", area: "Usher Courses", categoryIndex: 6, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Movie Theatre Security", name: "Movie Theatre Security", area: "Usher Courses", categoryIndex: 6, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Ticket Check", name: "Ticket Check", area: "Usher Courses", categoryIndex: 6, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Marketing Strategies and Events", name: "Marketing Strategies and Events", area: "Marketing", categoryIndex: 7, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Investigation Skills", name: "Investigation Skills", area: "Human Resources", categoryIndex: 8, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Manager FMLA Guide", name: "Managers Guide to the Family Medical Leave Act (FMLA)", area: "Human Resources", categoryIndex: 8, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Regal Academy", name: "Regal Academy Reporting and User Management", area: "Human Resources", categoryIndex: 8, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Training Others", name: "Training Others", area: "Human Resources", categoryIndex: 8, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Building Our Teams", name: "Building Our Teams", area: "Human Resources", categoryIndex: 8, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Counseling an Employee", name: "How to Counsel an Employee", area: "Human Resources", categoryIndex: 8, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Projection Booth Basics", name: "", area: "Projection Booth", categoryIndex: 9, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Screenwriter Training", name: "", area: "Projection Booth", categoryIndex: 9, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Full Interface, Producer, and Manual Playlists", name: "", area: "Projection Booth", categoryIndex: 9, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Monitoring Presentation Quality", name: "Monitoring Presentation Quality", area: "Projection Booth", categoryIndex: 9, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Food Safety - Intro", name: "Food Handler Safety - Intro", area: "Food Handler Safety", categoryIndex: 10, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Food Safety - Personal Hygiene", name: "Food Handler Safety - Personal Hygiene", area: "Food Handler Safety", categoryIndex: 10, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Food Safety - Cleaning and Sanitizing", name: "Food Handler Safety - Cleaning and Sanitizing", area: "Food Handler Safety", categoryIndex: 10, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Food Safety - Pest Control", name: "Food Handler Safety - Pest Control", area: "Food Handler Safety", categoryIndex: 10, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Food Safety - Food Storage", name: "Food Handler Safety - Food Storage", area: "Food Handler Safety", categoryIndex: 10, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Food Safety - Food Prep", name: "Food Handler Safety - Food Prep", area: "Food Handler Safety", categoryIndex: 10, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Food Safety - Cross Contamination", name: "Food Handler Safety - Cross Contamination", area: "Food Handler Safety", categoryIndex: 10, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Food Allergen Awareness", name: "Food Allergen Awareness", area: "Food Handler Safety", categoryIndex: 10, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Laser Projection Safety", name: "Laser Projection Safety", area: "Additional Courses", categoryIndex: 11, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "IMAX Training", name: "IMAX Training", area: "Additional Courses", categoryIndex: 11, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "IMAX 3D Glasses", name: "IMAX 3D Glasses", area: "Additional Courses", categoryIndex: 11, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Intouch Training", name: "Intouch Training", area: "Additional Courses", categoryIndex: 11, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Counting with Intouch", name: "Counting with Intouch", area: "Additional Courses", categoryIndex: 11, level: "Level 1", positions: "Leadership", group: "Leadership"},
+        {short: "Regal Bar Intro", name: "Regal Bar Intro", area: "Additional Courses", categoryIndex: 11, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Alcohol Sales and Misuse", name: "Legal Focus: Alcohol Sales and Misuse", area: "Additional Courses", categoryIndex: 11, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Naloxone Training and Use", name: "Naloxone Training and Use", area: "Additional Courses", categoryIndex: 11, level: "Level 1", positions: "Staff", group: "Staff"},
+        {short: "Communication Fundamentals", name: "Communication Fundamentals", area: "Working Together", categoryIndex: 12, level: "Level 2", positions: "Staff", group: "Staff"},
+        {short: "Integrity in the Workplace", name: "Integrity in the Workplace", area: "Working Together", categoryIndex: 12, level: "Level 2", positions: "Staff", group: "Staff"},
+        {short: "Developing Professional Networks", name: "Developing and Maintaining a Professional Network", area: "Working Together", categoryIndex: 12, level: "Level 2", positions: "Staff", group: "Staff"},
+        {short: "Common Workplace Challenges", name: "Common Workplace Challenges and How to Handle Them", area: "Working Together", categoryIndex: 12, level: "Level 2", positions: "Staff", group: "Staff"},
+        {short: "Being a Great Buddy", name: "Being a Great Buddy", area: "Working Together", categoryIndex: 12, level: "Level 2", positions: "Staff", group: "Staff"},
+        {short: "6 Tips for Peer-to-Peer Theatre Training", name: "6 Tips for Peer-to-Peer Theatre Training", area: "Working Together", categoryIndex: 12, level: "Level 2", positions: "Staff", group: "Staff"},
+        {short: "Time Management Essentials", name: "Time Management Essentials", area: "Commitment to Excellence", categoryIndex: 13, level: "Level 2", positions: "Staff", group: "Staff"},
+        {short: "Growth Mindset", name: "Growth Mindset", area: "Commitment to Excellence", categoryIndex: 13, level: "Level 2", positions: "Staff", group: "Staff"},
+        {short: "Mental Toughness", name: "Mental Toughness", area: "Commitment to Excellence", categoryIndex: 13, level: "Level 2", positions: "Staff", group: "Staff"},
+        {short: "Workplace Change", name: "Coping with Workplace Change", area: "Commitment to Excellence", categoryIndex: 13, level: "Level 2", positions: "Leadership", group: "Leadership"},
+        {short: "Empowerment", name: "Empowerment", area: "Creativity & Critical Thinking", categoryIndex: 14, level: "Level 2", positions: "Staff", group: "Staff"},
+        {short: "Critical Thinking", name: "Critical Thinking", area: "Creativity & Critical Thinking", categoryIndex: 14, level: "Level 2", positions: "Staff", group: "Staff"},
+        {short: "Step-by-Step Problem Solving", name: "A Step-by-Step Guide to Problem Solving in Your Theatre", area: "Creativity & Critical Thinking", categoryIndex: 14, level: "Level 2", positions: "Staff", group: "Staff"},
+        {short: "Creating Presentations", name: "Creating and Delivering Presentations", area: "Creativity & Critical Thinking", categoryIndex: 14, level: "Level 2", positions: "Leadership", group: "Leadership"},
+        {short: "Professionalism", name: "Professionalism: Meeting the Standards that Matter", area: "Strategic Business Mindset", categoryIndex: 15, level: "Level 2", positions: "Staff", group: "Staff"},
+        {short: "Buidling Better Relationships", name: "How to Build Better Relationships with Your Manager and Coworkers", area: "Strategic Business Mindset", categoryIndex: 15, level: "Level 2", positions: "Staff", group: "Staff"},
+        {short: "Skilled Delegation", name: "The Secrets of Skilled Delegation", area: "Leading, Mentoring, and Developing", categoryIndex: 16, level: "Level 2", positions: "Leadership", group: "Leadership"},
+        {short: "Coaching Employees", name: "How to Coach an Employee", area: "Leading, Mentoring, and Developing", categoryIndex: 16, level: "Level 2", positions: "Leadership", group: "Leadership"},
+        {short: "Managing Stress", name: "The Basics of Managing Stress", area: "Leading, Mentoring, and Developing", categoryIndex: 16, level: "Level 2", positions: "Leadership", group: "Leadership"},
+        {short: "Giving Effective Feedback", name: "Giving Effective Feedback in the Theatre", area: "Leading, Mentoring, and Developing", categoryIndex: 16, level: "Level 2", positions: "Leadership", group: "Leadership"},
+        {short: "Intro to SHOW Strategy", name: "Introduction to the SHOW Strategy (RCG)", area: "GM University", categoryIndex: 17, level: "", positions: "GM", group: "GM"},
+        {short: "SHOW Strategy Playbook", name: "SHOW Strategy Playbook for General Managers (RCG)", area: "GM University", categoryIndex: 17, level: "", positions: "GM", group: "GM"},
+        {short: "Introduction to P&L", name: "Highest Returns: Introduction to P&L (RCG)", area: "GM University", categoryIndex: 17, level: "", positions: "GM", group: "GM"},
+        {short: "Maximizing Market Share", name: "Optimized Portfolio: Maximizing Market Share (RCG)", area: "GM University", categoryIndex: 17, level: "", positions: "GM", group: "GM"},
+        {short: "The 5C’s", name: "Superior Entertainment Experience: The 5C’s (RCG)", area: "GM University", categoryIndex: 17, level: "", positions: "GM", group: "GM"},
+        {short: "Highest Returns Part 1", name: "Highest Returns: Advanced Financial Performance - Part 1 (RCG)", area: "GM University", categoryIndex: 17, level: "", positions: "GM", group: "GM"},
+        {short: "Highest Returns Part 2", name: "Highest Returns: Advanced Financial Performance - Part 2 (RCG)", area: "GM University", categoryIndex: 17, level: "", positions: "GM", group: "GM"}
       ];
 
       const checkSvg = '<svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M8.2 13.4 4.8 10l1.4-1.4 2 2 5.6-5.6 1.4 1.4-7 7z"></path></svg>';
@@ -386,8 +494,10 @@
         {key:'short', placeholder:'Short code'},
         {key:'name', placeholder:'Class name'},
         {key:'area', placeholder:'Category'},
-        {key:'group', placeholder:'Group'},
+        {key:'categoryIndex', placeholder:'Category index'},
+        {key:'group', placeholder:'Positions'},
         {key:'level', placeholder:'Level'},
+        {key:'leadership', placeholder:'Leadership (Yes/No)'},
         {key:'step', placeholder:'Step'}
       ];
 
@@ -398,7 +508,8 @@
           const id = base.id || fallbackId;
           let level = base.level || '';
           if(!level){
-            const m = (base.group||'').match(/level\s*(\d+)/i);
+            const levelSource = base.group || base.positions || '';
+            const m = String(levelSource).match(/level\s*(\d+)/i);
             if(m) level = `Level ${m[1]}`;
           }
           let step = base.step || '';
@@ -414,7 +525,24 @@
             const p3 = (base.short||'').match(/(\d+)$/);
             if(p3) step = p3[1];
           }
-          return {...base, id, level, step, __index: index};
+          const positions = base.positions || base.group || '';
+          const group = positions || base.group || '';
+          const {display: categoryIndex, order: categoryOrder} = parseCategoryIndex(base.categoryIndex);
+          const leadership = normalizeLeadership(base.leadership, positions || group);
+          const name = base.name || base.short || id;
+          return {
+            ...base,
+            id,
+            name,
+            level,
+            step,
+            positions,
+            group,
+            categoryIndex,
+            leadership,
+            __categoryOrder: categoryOrder,
+            __index: index
+          };
         });
       }
 
@@ -423,12 +551,38 @@
           const copy = {...item};
           const fallbackId = slug(`${copy.short||''}|${copy.name||''}`) || `class-${index+1}`;
           copy.id = copy.id || fallbackId;
+          if(!copy.positions && copy.group) copy.positions = copy.group;
+          if(copy.positions && !copy.group) copy.group = copy.positions;
+          copy.leadership = normalizeLeadership(copy.leadership, copy.positions || copy.group || '');
           return copy;
         });
       }
 
       function uniqueSorted(arr){
         return Array.from(new Set(arr.filter(v=>v))).sort((a,b)=>String(a).localeCompare(String(b)));
+      }
+
+      function normalizeLeadership(value, positions){
+        const raw = String(value ?? '').trim();
+        if(raw){
+          if(/^(yes|y|true|1)$/i.test(raw)) return 'Yes';
+          if(/^(no|n|false|0)$/i.test(raw)) return 'No';
+          return raw;
+        }
+        const pos = String(positions || '');
+        if(/(leadership|gm)/i.test(pos)) return 'Yes';
+        return 'No';
+      }
+
+      function parseCategoryIndex(value){
+        if(value === undefined || value === null) return {display:'', order:Number.POSITIVE_INFINITY};
+        const raw = String(value).trim();
+        if(!raw) return {display:'', order:Number.POSITIVE_INFINITY};
+        const num = Number(raw);
+        if(Number.isFinite(num)){
+          return {display:String(num), order:num};
+        }
+        return {display:raw, order:Number.POSITIVE_INFINITY};
       }
 
       let instance = null;
@@ -691,7 +845,7 @@
         catalogGrid.className = 'tt-grid';
         const catalogTable = document.createElement('table');
         const catalogHead = document.createElement('thead');
-        catalogHead.innerHTML = '<tr><th>Short</th><th>Name</th><th>Category</th><th>Group</th><th>Level</th><th>Step</th></tr>';
+        catalogHead.innerHTML = '<tr><th>Short</th><th>Name</th><th>Category</th><th>Category Index</th><th>Positions</th><th>Level</th><th>Leadership</th><th>Step</th></tr>';
         const catalogBody = document.createElement('tbody');
         catalogBody.id = 'tt-catalogBody';
         catalogTable.append(catalogHead, catalogBody);
@@ -1460,6 +1614,9 @@
           if(row.dataset.newRow === 'true'){
             const values = collectCatalogRowValues(row);
             if(!values) return;
+            values.group = values.group || '';
+            values.positions = values.group || '';
+            values.leadership = normalizeLeadership(values.leadership, values.positions);
             const id = generateClassId(values);
             state.classes.push({...values, id});
             customClassCounter = state.classes.length;
@@ -1497,6 +1654,9 @@
                   input.value = trimmed;
                 }
               });
+              target.group = target.group || '';
+              target.positions = target.group || target.positions || '';
+              target.leadership = normalizeLeadership(target.leadership, target.positions);
               refreshAfterClassChange(false);
               const updated = state.catalog[index];
               if(updated){
@@ -2018,7 +2178,17 @@
           const step = elements.empFilters.empStep.value;
           const list = state.catalog
             .filter(c=> (!cat || c.area===cat) && (!group || c.group===group) && (!level || c.level===level) && (!step || String(c.step)===String(step)))
-            .sort((a,b)=> a.name.localeCompare(b.name));
+            .sort((a,b)=>{
+              const orderA = Number.isFinite(a.__categoryOrder) ? a.__categoryOrder : Number.POSITIVE_INFINITY;
+              const orderB = Number.isFinite(b.__categoryOrder) ? b.__categoryOrder : Number.POSITIVE_INFINITY;
+              if(orderA !== orderB) return orderA - orderB;
+              const areaA = a.area || '';
+              const areaB = b.area || '';
+              if(areaA !== areaB) return areaA.localeCompare(areaB);
+              const nameA = (a.name || a.short || '').toString();
+              const nameB = (b.name || b.short || '').toString();
+              return nameA.localeCompare(nameB);
+            });
 
           const host = elements.detailHost;
           host.textContent = '';
