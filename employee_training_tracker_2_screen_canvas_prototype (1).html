@@ -356,6 +356,7 @@
 </head>
 <body>
   <div id="tt-root"></div>
+  <script src="course_catalog.js"></script>
   <script>
     (function(){
       const STORAGE_KEY = 'tt-trainingTrackerState-v1';
@@ -367,16 +368,21 @@
         {id:'E2',name:'Noah Walker',title:'Usher'},
         {id:'E3',name:'Kayden Phillips',title:'Usher'}
       ];
-      const defaultClasses = [
-        {short:'Unlimited Staff', name:'Regal Unlimited - Team Member', area:'Pre-Board Courses', group:'Level 1'},
-        {short:'Fire Safety', name:'Fire Safety', area:'Compliance', group:'Compliance'},
-        {short:'ADA Staff', name:'Assisting Guests with Disabilities - Team Member', area:'Post-Hire Basics', group:'Level 1'},
-        {short:'CC-DA-ALD', name:'Closed Captioning, Descriptive Audio, and Assisted Listening Devices', area:'Post-Hire Basics', group:'Level 1'},
-        {short:'Cash Handling 1', name:'Cash Handling Part 1', area:'Food Service', group:'Level 1'},
-        {short:'Cash Handling 2', name:'Cash Handling Part 2', area:'Food Service', group:'Level 1'},
-        {short:"Raven Thorn's Popcorn Challenge", name:"Raven Thorn's Popcorn Challenge", area:'Food Service', group:'Level 1'},
-        {short:'Professionalism', name:'Professionalism: Meeting the Standards that Matter', area:'Strategic Business Mindset', group:'Level 2'}
-      ];
+      const defaultClasses = (Array.isArray(window.TRAINING_TRACKER_COURSES) ? window.TRAINING_TRACKER_COURSES : []).map((item)=>{
+        const normalized = {...item};
+        if(normalized && typeof normalized === 'object'){
+          if(normalized.area === undefined && normalized.category !== undefined) normalized.area = normalized.category;
+          if(normalized.area === undefined && normalized.Category !== undefined) normalized.area = normalized.Category;
+          if(normalized.categoryIndex === undefined && normalized.category_index !== undefined) normalized.categoryIndex = normalized.category_index;
+          if(normalized.categoryIndex === undefined && normalized.Category_Index !== undefined) normalized.categoryIndex = normalized.Category_Index;
+          if(normalized.positions === undefined && normalized.group !== undefined) normalized.positions = normalized.group;
+          if(normalized.positions === undefined && normalized.Positions !== undefined) normalized.positions = normalized.Positions;
+          if(normalized.group === undefined && normalized.positions !== undefined) normalized.group = normalized.positions;
+          if(normalized.leadership === undefined && normalized.Leadership !== undefined) normalized.leadership = normalized.Leadership;
+          if(normalized.step === undefined && normalized.Step !== undefined) normalized.step = normalized.Step;
+        }
+        return normalized;
+      });
 
       const checkSvg = '<svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M8.2 13.4 4.8 10l1.4-1.4 2 2 5.6-5.6 1.4 1.4-7 7z"></path></svg>';
 
@@ -386,8 +392,10 @@
         {key:'short', placeholder:'Short code'},
         {key:'name', placeholder:'Class name'},
         {key:'area', placeholder:'Category'},
-        {key:'group', placeholder:'Group'},
+        {key:'categoryIndex', placeholder:'Category index'},
+        {key:'group', placeholder:'Positions'},
         {key:'level', placeholder:'Level'},
+        {key:'leadership', placeholder:'Leadership (Yes/No)'},
         {key:'step', placeholder:'Step'}
       ];
 
@@ -398,7 +406,8 @@
           const id = base.id || fallbackId;
           let level = base.level || '';
           if(!level){
-            const m = (base.group||'').match(/level\s*(\d+)/i);
+            const levelSource = base.group || base.positions || '';
+            const m = String(levelSource).match(/level\s*(\d+)/i);
             if(m) level = `Level ${m[1]}`;
           }
           let step = base.step || '';
@@ -414,7 +423,24 @@
             const p3 = (base.short||'').match(/(\d+)$/);
             if(p3) step = p3[1];
           }
-          return {...base, id, level, step, __index: index};
+          const positions = base.positions || base.group || '';
+          const group = positions || base.group || '';
+          const {display: categoryIndex, order: categoryOrder} = parseCategoryIndex(base.categoryIndex);
+          const leadership = normalizeLeadership(base.leadership, positions || group);
+          const name = base.name || base.short || id;
+          return {
+            ...base,
+            id,
+            name,
+            level,
+            step,
+            positions,
+            group,
+            categoryIndex,
+            leadership,
+            __categoryOrder: categoryOrder,
+            __index: index
+          };
         });
       }
 
@@ -423,12 +449,38 @@
           const copy = {...item};
           const fallbackId = slug(`${copy.short||''}|${copy.name||''}`) || `class-${index+1}`;
           copy.id = copy.id || fallbackId;
+          if(!copy.positions && copy.group) copy.positions = copy.group;
+          if(copy.positions && !copy.group) copy.group = copy.positions;
+          copy.leadership = normalizeLeadership(copy.leadership, copy.positions || copy.group || '');
           return copy;
         });
       }
 
       function uniqueSorted(arr){
         return Array.from(new Set(arr.filter(v=>v))).sort((a,b)=>String(a).localeCompare(String(b)));
+      }
+
+      function normalizeLeadership(value, positions){
+        const raw = String(value ?? '').trim();
+        if(raw){
+          if(/^(yes|y|true|1)$/i.test(raw)) return 'Yes';
+          if(/^(no|n|false|0)$/i.test(raw)) return 'No';
+          return raw;
+        }
+        const pos = String(positions || '');
+        if(/(leadership|gm)/i.test(pos)) return 'Yes';
+        return 'No';
+      }
+
+      function parseCategoryIndex(value){
+        if(value === undefined || value === null) return {display:'', order:Number.POSITIVE_INFINITY};
+        const raw = String(value).trim();
+        if(!raw) return {display:'', order:Number.POSITIVE_INFINITY};
+        const num = Number(raw);
+        if(Number.isFinite(num)){
+          return {display:String(num), order:num};
+        }
+        return {display:raw, order:Number.POSITIVE_INFINITY};
       }
 
       let instance = null;
@@ -691,7 +743,7 @@
         catalogGrid.className = 'tt-grid';
         const catalogTable = document.createElement('table');
         const catalogHead = document.createElement('thead');
-        catalogHead.innerHTML = '<tr><th>Short</th><th>Name</th><th>Category</th><th>Group</th><th>Level</th><th>Step</th></tr>';
+        catalogHead.innerHTML = '<tr><th>Short</th><th>Name</th><th>Category</th><th>Category Index</th><th>Positions</th><th>Level</th><th>Leadership</th><th>Step</th></tr>';
         const catalogBody = document.createElement('tbody');
         catalogBody.id = 'tt-catalogBody';
         catalogTable.append(catalogHead, catalogBody);
@@ -1460,6 +1512,9 @@
           if(row.dataset.newRow === 'true'){
             const values = collectCatalogRowValues(row);
             if(!values) return;
+            values.group = values.group || '';
+            values.positions = values.group || '';
+            values.leadership = normalizeLeadership(values.leadership, values.positions);
             const id = generateClassId(values);
             state.classes.push({...values, id});
             customClassCounter = state.classes.length;
@@ -1497,6 +1552,9 @@
                   input.value = trimmed;
                 }
               });
+              target.group = target.group || '';
+              target.positions = target.group || target.positions || '';
+              target.leadership = normalizeLeadership(target.leadership, target.positions);
               refreshAfterClassChange(false);
               const updated = state.catalog[index];
               if(updated){
@@ -2018,7 +2076,17 @@
           const step = elements.empFilters.empStep.value;
           const list = state.catalog
             .filter(c=> (!cat || c.area===cat) && (!group || c.group===group) && (!level || c.level===level) && (!step || String(c.step)===String(step)))
-            .sort((a,b)=> a.name.localeCompare(b.name));
+            .sort((a,b)=>{
+              const orderA = Number.isFinite(a.__categoryOrder) ? a.__categoryOrder : Number.POSITIVE_INFINITY;
+              const orderB = Number.isFinite(b.__categoryOrder) ? b.__categoryOrder : Number.POSITIVE_INFINITY;
+              if(orderA !== orderB) return orderA - orderB;
+              const areaA = a.area || '';
+              const areaB = b.area || '';
+              if(areaA !== areaB) return areaA.localeCompare(areaB);
+              const nameA = (a.name || a.short || '').toString();
+              const nameB = (b.name || b.short || '').toString();
+              return nameA.localeCompare(nameB);
+            });
 
           const host = elements.detailHost;
           host.textContent = '';
