@@ -161,6 +161,21 @@
       border-right:1px solid rgba(255,255,255,0.25);
       box-shadow:0 1px 0 rgba(17,24,39,0.08);
     }
+    .tt-grid thead th.tt-sortable,
+    .tt-dash-table thead th.tt-sortable {
+      cursor:pointer;
+      user-select:none;
+    }
+    .tt-grid thead th.tt-sort-asc::after,
+    .tt-dash-table thead th.tt-sort-asc::after {
+      content:' \25B2';
+      font-size:10px;
+    }
+    .tt-grid thead th.tt-sort-desc::after,
+    .tt-dash-table thead th.tt-sort-desc::after {
+      content:' \25BC';
+      font-size:10px;
+    }
     #tt-overviewTbl thead th {
       position:sticky;
       top:0;
@@ -1571,6 +1586,112 @@ window.TRAINING_TRACKER_COURSES = [
         return Array.from(new Set(arr.filter(v=>v))).sort((a,b)=>String(a).localeCompare(String(b)));
       }
 
+      function collectCategoriesByIndex(catalog){
+        const map = new Map();
+        (catalog || []).forEach(cls=>{
+          const label = cls && cls.area ? String(cls.area) : '';
+          if(!label) return;
+          const order = Number.isFinite(cls.__categoryOrder) ? cls.__categoryOrder : Number.POSITIVE_INFINITY;
+          const current = map.get(label);
+          if(current === undefined || order < current){
+            map.set(label, order);
+          }
+        });
+        return Array.from(map.entries())
+          .sort((a,b)=>{
+            if(a[1] !== b[1]) return a[1] - b[1];
+            return a[0].localeCompare(b[0]);
+          })
+          .map(entry=>entry[0]);
+      }
+
+      function enableTableSorting(table, options={}){
+        if(!table || table.dataset.ttSortableApplied) return;
+        const thead = table.tHead;
+        const tbody = table.tBodies && table.tBodies[0];
+        if(!thead || !tbody) return;
+        table.dataset.ttSortableApplied = 'true';
+        const headers = Array.from(thead.querySelectorAll('th'));
+        const sortState = {index:-1, direction:1};
+        const {stickySelector=null, beforeSort=null} = options;
+
+        const parseSortValue = value=>{
+          const text = String(value ?? '').trim();
+          if(!text) return {text:'', num:Number.NaN};
+          const normalized = text.replace(/[%,$]/g,'').replace(/\s+/g,'');
+          const num = normalized ? Number(normalized) : Number.NaN;
+          return {text, num};
+        };
+
+        const getCellValue = (row, index)=>{
+          const cell = row.children[index];
+          if(!cell) return '';
+          if(cell.dataset && cell.dataset.sortValue !== undefined) return cell.dataset.sortValue;
+          const input = cell.querySelector('input, select, textarea');
+          if(input) return input.value || '';
+          return cell.textContent || '';
+        };
+
+        const applySortIndicators = (activeIndex, direction)=>{
+          headers.forEach((th, idx)=>{
+            th.classList.remove('tt-sort-asc', 'tt-sort-desc');
+            th.removeAttribute('aria-sort');
+            if(idx === activeIndex){
+              th.classList.add(direction === 1 ? 'tt-sort-asc' : 'tt-sort-desc');
+              th.setAttribute('aria-sort', direction === 1 ? 'ascending' : 'descending');
+            }
+          });
+        };
+
+        const runSort = index=>{
+          if(typeof beforeSort === 'function') beforeSort();
+          const rows = Array.from(tbody.querySelectorAll('tr'));
+          const sortableRows = stickySelector ? rows.filter(row=> !row.matches(stickySelector)) : rows.slice();
+          if(sortableRows.length <= 1) return;
+          const stickyRows = stickySelector ? rows.filter(row=> row.matches(stickySelector)) : [];
+          const direction = (sortState.index === index && sortState.direction === 1) ? -1 : 1;
+          sortState.index = index;
+          sortState.direction = direction;
+          applySortIndicators(index, direction);
+          const collated = sortableRows.map((row, originalIndex)=>({row, originalIndex}));
+          collated.sort((a,b)=>{
+            const aVal = getCellValue(a.row, index);
+            const bVal = getCellValue(b.row, index);
+            const aParsed = parseSortValue(aVal);
+            const bParsed = parseSortValue(bVal);
+            const aNumValid = Number.isFinite(aParsed.num);
+            const bNumValid = Number.isFinite(bParsed.num);
+            if(aNumValid && bNumValid){
+              if(aParsed.num !== bParsed.num) return (aParsed.num - bParsed.num) * direction;
+            }
+            const cmp = aParsed.text.localeCompare(bParsed.text, undefined, {numeric:true, sensitivity:'base'});
+            if(cmp !== 0) return cmp * direction;
+            return (a.originalIndex - b.originalIndex) * direction;
+          });
+          const frag = document.createDocumentFragment();
+          collated.forEach(item=> frag.appendChild(item.row));
+          tbody.appendChild(frag);
+          if(stickyRows.length){
+            const stickyFrag = document.createDocumentFragment();
+            stickyRows.forEach(row=> stickyFrag.appendChild(row));
+            tbody.appendChild(stickyFrag);
+          }
+        };
+
+        headers.forEach((th, index)=>{
+          if(th.dataset && th.dataset.sortable === 'false') return;
+          th.classList.add('tt-sortable');
+          th.tabIndex = 0;
+          th.addEventListener('click', ()=> runSort(index));
+          th.addEventListener('keydown', ev=>{
+            if(ev.key === 'Enter' || ev.key === ' '){
+              ev.preventDefault();
+              runSort(index);
+            }
+          });
+        });
+      }
+
       function normalizeLeadership(value, positions){
         const raw = String(value ?? '').trim();
         if(raw){
@@ -1969,6 +2090,7 @@ window.TRAINING_TRACKER_COURSES = [
         const catalogBody = document.createElement('tbody');
         catalogBody.id = 'tt-catalogBody';
         catalogTable.append(catalogHead, catalogBody);
+        enableTableSorting(catalogTable, {stickySelector:'tr[data-new-row]'});
         catalogGrid.appendChild(catalogTable);
         catalog.append(catalogHeading, catalogFilters, catalogGrid);
 
@@ -1986,6 +2108,7 @@ window.TRAINING_TRACKER_COURSES = [
         const empListBody = document.createElement('tbody');
         empListBody.id = 'tt-empListBody';
         empListTable.append(empListHead, empListBody);
+        enableTableSorting(empListTable);
         empListGrid.appendChild(empListTable);
         empList.append(empListHeading, empListGrid);
 
@@ -2003,6 +2126,7 @@ window.TRAINING_TRACKER_COURSES = [
         const jobListBody = document.createElement('tbody');
         jobListBody.id = 'tt-jobListBody';
         jobListTable.append(jobListHead, jobListBody);
+        enableTableSorting(jobListTable);
         jobListGrid.appendChild(jobListTable);
         jobList.append(jobListHeading, jobListGrid);
 
@@ -3280,7 +3404,7 @@ window.TRAINING_TRACKER_COURSES = [
           };
 
           const dashFilters = elements.dashboardFilters || {};
-          const cats = uniqueSorted(state.catalog.map(c=>c.area||''));
+          const cats = collectCategoriesByIndex(state.catalog);
           const groups = uniqueSorted(state.catalog.map(c=>c.group||''));
           const levels = uniqueSorted(state.catalog.map(c=>c.level||''));
           const steps = uniqueSorted(state.catalog.map(c=>c.step||''));
@@ -3622,6 +3746,7 @@ window.TRAINING_TRACKER_COURSES = [
               tbody.appendChild(tr);
             });
             table.append(thead, tbody);
+            enableTableSorting(table);
             tableWrap.appendChild(table);
             tableSection.appendChild(tableWrap);
             host.appendChild(tableSection);
