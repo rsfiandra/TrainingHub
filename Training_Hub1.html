@@ -1660,6 +1660,31 @@ window.TRAINING_TRACKER_COURSES = [
         });
       }
 
+      // Auto-restore a snapshot embedded in this HTML (if present)
+      (function restoreEmbeddedTTSnapshot(){
+        try{
+          const script = document.getElementById('ttEmbeddedState');
+          if(!script || !script.textContent) return;
+          const snap = JSON.parse(script.textContent);
+          const payload = {
+            completion: snap.completion || {},
+            completionMeta: snap.completionMeta || {},
+            classes: Array.isArray(snap.classes) ? snap.classes : [],
+            employees: Array.isArray(snap.employees) ? snap.employees : []
+          };
+          // Persist to both stores; loadData() will merge these on boot.
+          if(typeof localStorage !== 'undefined'){
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+          }
+          // Best-effort IndexedDB write (non-blocking)
+          if (typeof idbWriteState === 'function'){
+            idbWriteState(payload).catch(()=>{});
+          }
+        }catch(err){
+          console.warn('TrainingTracker: failed to restore embedded snapshot', err);
+        }
+      })();
+
       function scheduleIdle(callback){
         if(typeof requestIdleCallback === 'function'){
           const id = requestIdleCallback(callback);
@@ -1763,6 +1788,13 @@ window.TRAINING_TRACKER_COURSES = [
         resetBtn.className = 'tt-import-btn';
         resetBtn.textContent = 'Clear Saved Data';
         importWrap.appendChild(resetBtn);
+        // Save Snapshot button (exports a self-contained HTML)
+        const saveBtn = document.createElement('button');
+        saveBtn.type = 'button';
+        saveBtn.id = 'tt-saveBtn';
+        saveBtn.className = 'tt-import-btn';
+        saveBtn.textContent = 'Save Snapshot';
+        importWrap.appendChild(saveBtn);
 
         headerPanel.append(headerInfo, importWrap);
 
@@ -1979,6 +2011,7 @@ window.TRAINING_TRACKER_COURSES = [
           importInput,
           importStatus,
           resetButton: resetBtn,
+          saveButton: saveBtn,
           tabDashboard,
           tabOverview,
           tabEmployee,
@@ -2344,6 +2377,66 @@ window.TRAINING_TRACKER_COURSES = [
               localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
             }catch(err){
               console.warn('TrainingTracker: failed to persist state', err);
+            }
+          }
+        }
+
+        async function exportEmbeddedSnapshot(){
+          try{
+            // Snapshot mirrors what saveState() persists
+            const snapshot = {
+              completion: clone(state.completion),
+              completionMeta: clone(state.completionMeta),
+              classes: clone(state.classes),
+              employees: clone(state.employees)
+            };
+            // Clone full document and inject <script id="ttEmbeddedState" type="application/json">
+            const docClone = document.documentElement.cloneNode(true);
+            const old = docClone.querySelector('#ttEmbeddedState');
+            if(old && old.parentNode) old.parentNode.removeChild(old);
+            const snapEl = docClone.ownerDocument.createElement('script');
+            snapEl.id = 'ttEmbeddedState';
+            snapEl.type = 'application/json';
+            snapEl.textContent = JSON.stringify(snapshot);
+            (docClone.querySelector('head') || docClone).appendChild(snapEl);
+
+            const htmlString = '<!DOCTYPE html>' + docClone.outerHTML;
+            const dateStr = new Date().toISOString().split('T')[0];
+            const filename = `training_tracker_${dateStr}_data.html`;
+
+            let saved = false;
+            try{
+              if(window.showSaveFilePicker){
+                const handle = await window.showSaveFilePicker({
+                  suggestedName: filename,
+                  types: [{ description: 'HTML file', accept: { 'text/html': ['.html', '.htm'] } }]
+                });
+                const writable = await handle.createWritable();
+                await writable.write(htmlString);
+                await writable.close();
+                saved = true;
+              }
+            }catch(_e){ /* fall through to anchor */ }
+
+            if(!saved){
+              const blob = new Blob([htmlString], { type: 'text/html' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = filename;
+              document.body.appendChild(a);
+              a.click();
+              setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
+            }
+            if(elements.importStatus){
+              elements.importStatus.textContent = 'Snapshot saved';
+              elements.importStatus.classList.remove('tt-import-error');
+            }
+          }catch(err){
+            if(elements.importStatus){
+              elements.importStatus.textContent = 'Snapshot save failed';
+              elements.importStatus.classList.add('tt-import-error');
+              elements.importStatus.title = String(err && err.message || err || '');
             }
           }
         }
@@ -4146,6 +4239,10 @@ window.TRAINING_TRACKER_COURSES = [
           // Attach handler for clearing persisted state
           if(elements.resetButton){
             addListener(elements.resetButton, 'click', handleResetClick);
+          }
+
+          if(elements.saveButton){
+            elements.saveButton.addEventListener('click', exportEmbeddedSnapshot);
           }
 
           const triggerTabRenders = ()=>{
