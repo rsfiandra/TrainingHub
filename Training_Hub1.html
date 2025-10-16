@@ -188,6 +188,9 @@
       flex-direction:column;
       gap:16px;
     }
+    .tt-dash-filters {
+      align-items:flex-end;
+    }
     .tt-dash-cards {
       display:grid;
       gap:12px;
@@ -260,6 +263,83 @@
       color:var(--tt-muted);
       text-align:right;
       white-space:nowrap;
+    }
+    .tt-dash-chart {
+      gap:16px;
+    }
+    .tt-chart-rows {
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .tt-chart-row {
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    .tt-chart-label {
+      flex:0 0 160px;
+      font-weight:600;
+      font-size:13px;
+    }
+    .tt-chart-bar {
+      flex:1;
+      height:12px;
+      border-radius:999px;
+      background:rgba(37,99,235,0.18);
+      overflow:hidden;
+      position:relative;
+    }
+    .tt-chart-fill {
+      position:absolute;
+      inset:0;
+      border-radius:inherit;
+      background:linear-gradient(90deg,var(--tt-brand-from),var(--tt-brand-to));
+      transform-origin:left center;
+    }
+    .tt-chart-value {
+      width:48px;
+      text-align:right;
+      font-size:12px;
+      color:var(--tt-muted);
+      font-variant-numeric:tabular-nums;
+    }
+    .tt-dash-table {
+      overflow:auto;
+      border:1px solid var(--tt-ring);
+      border-radius:12px;
+      background:#fff;
+      max-width:100%;
+    }
+    .tt-dash-table table {
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      min-width:420px;
+    }
+    .tt-dash-table thead th {
+      background:linear-gradient(90deg,var(--tt-brand-from),var(--tt-brand-to));
+      color:#fff;
+      font-weight:600;
+    }
+    .tt-dash-table th,
+    .tt-dash-table td {
+      padding:8px 10px;
+      border-bottom:1px solid var(--tt-ring);
+      border-right:1px solid var(--tt-ring);
+      font-size:13px;
+      text-align:center;
+    }
+    .tt-dash-table th:first-child,
+    .tt-dash-table td:first-child {
+      text-align:left;
+    }
+    .tt-dash-table tr:last-child td {
+      border-bottom:none;
+    }
+    .tt-dash-table th:last-child,
+    .tt-dash-table td:last-child {
+      border-right:none;
     }
     #tt-overviewTbl thead th.tt-emp-col,
     #tt-overviewTbl tbody th.tt-emp-col {
@@ -1734,10 +1814,28 @@ window.TRAINING_TRACKER_COURSES = [
         const dashboardIntro = document.createElement('p');
         dashboardIntro.className = 'tt-muted';
         dashboardIntro.textContent = 'Track overall training momentum at a glance.';
+        const dashboardFilters = document.createElement('div');
+        dashboardFilters.className = 'tt-row tt-dash-filters';
+        const dashSearch = buildTextInput('Search Classes', 'tt-dashboardSearch', 'Filter by name…');
+        const dashClass = buildSelect('Class', 'tt-dashboardClass');
+        const dashCat = buildSelect('Category', 'tt-dashboardCat');
+        const dashGroup = buildSelect('Group', 'tt-dashboardGroup');
+        const dashLevel = buildSelect('Level', 'tt-dashboardLevel');
+        const dashStep = buildSelect('Step', 'tt-dashboardStep');
+        const dashSite = buildSelect('Site', 'tt-dashboardSite');
+        dashboardFilters.append(
+          dashSearch.wrapper,
+          dashClass.wrapper,
+          dashCat.wrapper,
+          dashGroup.wrapper,
+          dashLevel.wrapper,
+          dashStep.wrapper,
+          dashSite.wrapper
+        );
         const dashboardBody = document.createElement('div');
         dashboardBody.id = 'tt-dashboardBody';
         dashboardBody.className = 'tt-dashboard';
-        dashboard.append(dashboardHeading, dashboardIntro, dashboardBody);
+        dashboard.append(dashboardHeading, dashboardIntro, dashboardFilters, dashboardBody);
 
         const overview = document.createElement('section');
         overview.id = 'tt-screen-overview';
@@ -1887,6 +1985,15 @@ window.TRAINING_TRACKER_COURSES = [
           tabCatalog,
           dashboardSection: dashboard,
           dashboardBody,
+          dashboardFilters: {
+            search: dashSearch.input,
+            classId: dashClass.select,
+            category: dashCat.select,
+            group: dashGroup.select,
+            level: dashLevel.select,
+            step: dashStep.select,
+            site: dashSite.select
+          },
           overviewSection: overview,
           overviewSearch: overviewSearch.input,
           overviewTable,
@@ -1956,6 +2063,15 @@ window.TRAINING_TRACKER_COURSES = [
           completionMeta: {},
           completionCounts: {}
         };
+        const filterState = {
+          search: '',
+          classId: '',
+          category: '',
+          group: '',
+          level: '',
+          step: '',
+          site: ''
+        };
         let customClassCounter = 0;
         let activeTab = 'overview';
         let tabNeedsRender = {
@@ -1994,6 +2110,55 @@ window.TRAINING_TRACKER_COURSES = [
           if(activeTab === which){
             renderTab(which);
           }
+        }
+
+        function syncFilterControls(){
+          if(elements.overviewSearch && elements.overviewSearch.value !== filterState.search){
+            elements.overviewSearch.value = filterState.search;
+          }
+          if(elements.dashboardFilters && elements.dashboardFilters.search && elements.dashboardFilters.search.value !== filterState.search){
+            elements.dashboardFilters.search.value = filterState.search;
+          }
+
+          const syncSelect = (select, key)=>{
+            if(!select) return;
+            const desired = filterState[key] || '';
+            if(desired){
+              const hasOption = Array.from(select.options || []).some(opt=>opt.value === desired);
+              if(hasOption){
+                if(select.value !== desired) select.value = desired;
+              }else{
+                if(select.value !== '') select.value = '';
+                if(filterState[key] !== '') filterState[key] = '';
+              }
+            }else if(select.value !== ''){
+              select.value = '';
+            }
+          };
+
+          syncSelect(elements.classFilter, 'classId');
+          syncSelect(elements.catFilter, 'category');
+          syncSelect(elements.groupFilter, 'group');
+          syncSelect(elements.levelFilter, 'level');
+          syncSelect(elements.stepFilter, 'step');
+          syncSelect(elements.siteFilter, 'site');
+
+          if(elements.dashboardFilters){
+            syncSelect(elements.dashboardFilters.classId, 'classId');
+            syncSelect(elements.dashboardFilters.category, 'category');
+            syncSelect(elements.dashboardFilters.group, 'group');
+            syncSelect(elements.dashboardFilters.level, 'level');
+            syncSelect(elements.dashboardFilters.step, 'step');
+            syncSelect(elements.dashboardFilters.site, 'site');
+          }
+        }
+
+        function updateFilterState(key, value){
+          const normalized = value == null ? '' : String(value);
+          if(filterState[key] === normalized) return false;
+          filterState[key] = normalized;
+          syncFilterControls();
+          return true;
         }
 
         function bumpCompletionCount(empId, delta){
@@ -2968,13 +3133,6 @@ window.TRAINING_TRACKER_COURSES = [
 
         function buildFacetOptions(){
           const prev = {
-            classId: elements.classFilter.value,
-            overviewCat: elements.catFilter.value,
-            overviewGroup: elements.groupFilter.value,
-            overviewLevel: elements.levelFilter.value,
-            overviewStep: elements.stepFilter.value,
-            // Preserve previous site filter selection for overview
-            overviewSite: elements.siteFilter ? elements.siteFilter.value : '',
             empCat: elements.empFilters.empCat.value,
             empGroup: elements.empFilters.empGroup.value,
             empLevel: elements.empFilters.empLevel.value,
@@ -2985,41 +3143,76 @@ window.TRAINING_TRACKER_COURSES = [
             catalogStep: elements.catalogFilters.step.value
           };
 
+          const dashFilters = elements.dashboardFilters || {};
           const cats = uniqueSorted(state.catalog.map(c=>c.area||''));
           const groups = uniqueSorted(state.catalog.map(c=>c.group||''));
           const levels = uniqueSorted(state.catalog.map(c=>c.level||''));
           const steps = uniqueSorted(state.catalog.map(c=>c.step||''));
-          // Gather unique site codes from employees (organization code)
           const sites = uniqueSorted((state.employees || []).map(e=>e && e.organizationCode ? String(e.organizationCode) : '').filter(x=>x));
 
-          clearSelect(elements.classFilter);
-          const allOption = document.createElement('option');
-          allOption.value = '';
-          allOption.textContent = 'All';
-          elements.classFilter.appendChild(allOption);
-          state.catalog.forEach(cls=>{
-            const opt = document.createElement('option');
-            opt.value = cls.id;
-            opt.textContent = cls.short;
-            opt.title = cls.name;
-            elements.classFilter.appendChild(opt);
-          });
-          restoreSelectValue(elements.classFilter, prev.classId);
+          const populateClassSelect = (select)=>{
+            if(!select) return;
+            clearSelect(select);
+            const optAll = document.createElement('option');
+            optAll.value = '';
+            optAll.textContent = 'All';
+            select.appendChild(optAll);
+            state.catalog.forEach(cls=>{
+              const opt = document.createElement('option');
+              opt.value = cls.id;
+              opt.textContent = cls.short;
+              opt.title = cls.name;
+              select.appendChild(opt);
+            });
+          };
+
+          populateClassSelect(elements.classFilter);
+          populateClassSelect(dashFilters.classId);
+          restoreSelectValue(elements.classFilter, filterState.classId);
+          if(dashFilters.classId) restoreSelectValue(dashFilters.classId, filterState.classId);
+
+          const syncFilterFromSelect = (primary, fallback, key)=>{
+            if(primary){
+              filterState[key] = primary.value || '';
+            }else if(fallback){
+              filterState[key] = fallback.value || '';
+            }else{
+              filterState[key] = '';
+            }
+          };
 
           setSelectOptions(elements.catFilter, cats, true);
-          restoreSelectValue(elements.catFilter, prev.overviewCat);
-          setSelectOptions(elements.groupFilter, groups, true);
-          restoreSelectValue(elements.groupFilter, prev.overviewGroup);
-          setSelectOptions(elements.levelFilter, levels, true);
-          restoreSelectValue(elements.levelFilter, prev.overviewLevel);
-          setSelectOptions(elements.stepFilter, steps, true);
-          restoreSelectValue(elements.stepFilter, prev.overviewStep);
+          if(dashFilters.category) setSelectOptions(dashFilters.category, cats, true);
+          restoreSelectValue(elements.catFilter, filterState.category);
+          if(dashFilters.category) restoreSelectValue(dashFilters.category, filterState.category);
+          syncFilterFromSelect(elements.catFilter, dashFilters.category, 'category');
 
-          // Populate site filter options and restore previous selection
-          if(elements.siteFilter){
-            setSelectOptions(elements.siteFilter, sites, true);
-            restoreSelectValue(elements.siteFilter, prev.overviewSite);
-          }
+          setSelectOptions(elements.groupFilter, groups, true);
+          if(dashFilters.group) setSelectOptions(dashFilters.group, groups, true);
+          restoreSelectValue(elements.groupFilter, filterState.group);
+          if(dashFilters.group) restoreSelectValue(dashFilters.group, filterState.group);
+          syncFilterFromSelect(elements.groupFilter, dashFilters.group, 'group');
+
+          setSelectOptions(elements.levelFilter, levels, true);
+          if(dashFilters.level) setSelectOptions(dashFilters.level, levels, true);
+          restoreSelectValue(elements.levelFilter, filterState.level);
+          if(dashFilters.level) restoreSelectValue(dashFilters.level, filterState.level);
+          syncFilterFromSelect(elements.levelFilter, dashFilters.level, 'level');
+
+          setSelectOptions(elements.stepFilter, steps, true);
+          if(dashFilters.step) setSelectOptions(dashFilters.step, steps, true);
+          restoreSelectValue(elements.stepFilter, filterState.step);
+          if(dashFilters.step) restoreSelectValue(dashFilters.step, filterState.step);
+          syncFilterFromSelect(elements.stepFilter, dashFilters.step, 'step');
+
+          if(elements.siteFilter) setSelectOptions(elements.siteFilter, sites, true);
+          if(dashFilters.site) setSelectOptions(dashFilters.site, sites, true);
+          if(elements.siteFilter) restoreSelectValue(elements.siteFilter, filterState.site);
+          if(dashFilters.site) restoreSelectValue(dashFilters.site, filterState.site);
+          syncFilterFromSelect(elements.siteFilter, dashFilters.site, 'site');
+
+          syncFilterFromSelect(elements.classFilter, dashFilters.classId, 'classId');
+          syncFilterControls();
 
           const empFilters = elements.empFilters;
           setSelectOptions(empFilters.empCat, cats, true);
@@ -3060,10 +3253,19 @@ window.TRAINING_TRACKER_COURSES = [
           return span;
         }
 
-        function computeProgress(empId){
-          const total = state.catalog.length;
+        function computeProgress(empId, classes=null){
+          const classList = Array.isArray(classes) ? classes : state.catalog;
+          const total = classList.length;
           if(total === 0) return 0;
-          const completed = state.completionCounts[empId] || 0;
+          let completed = 0;
+          if(Array.isArray(classes)){
+            const bucket = state.completion[empId] || {};
+            classList.forEach(cls=>{
+              if(bucket && bucket[cls.id]) completed += 1;
+            });
+          }else{
+            completed = state.completionCounts[empId] || 0;
+          }
           const pct = Math.round((completed/total)*100);
           return Math.max(0, Math.min(100, pct));
         }
@@ -3073,27 +3275,92 @@ window.TRAINING_TRACKER_COURSES = [
           if(!host) return;
           host.textContent = '';
 
-          const employees = Array.isArray(state.employees) ? state.employees : [];
-          const totalEmployees = employees.length;
-          const totalClasses = state.catalog.length;
+          const searchTerm = (filterState.search || '').trim().toLowerCase();
+          const cat = filterState.category;
+          const group = filterState.group;
+          const level = filterState.level;
+          const step = filterState.step;
+          const selectedClassId = filterState.classId;
+          const siteFilter = filterState.site;
 
-          const completionCountsByClass = new Map();
-          let completionRecords = 0;
-          if(state.completion && typeof state.completion === 'object'){
-            Object.keys(state.completion).forEach(empId=>{
-              const bucket = state.completion[empId];
-              if(!bucket || typeof bucket !== 'object') return;
-              Object.keys(bucket).forEach(classId=>{
-                if(bucket[classId]){
-                  completionRecords += 1;
-                  completionCountsByClass.set(classId, (completionCountsByClass.get(classId) || 0) + 1);
-                }
-              });
-            });
+          const matchesSearch = (cls)=>{
+            if(!searchTerm) return true;
+            const haystacks = [cls.short, cls.name];
+            return haystacks.some(value=> String(value||'').toLowerCase().includes(searchTerm));
+          };
+
+          const catalog = Array.isArray(state.catalog) ? state.catalog : [];
+          let filteredClasses = catalog.filter(c=>
+            (!cat || c.area === cat) &&
+            (!group || c.group === group) &&
+            (!level || c.level === level) &&
+            (!step || String(c.step) === String(step)) &&
+            matchesSearch(c)
+          );
+
+          if(selectedClassId){
+            const cls = catalog.find(c=>c.id === selectedClassId);
+            if(!cls || (searchTerm && !matchesSearch(cls))){
+              const empty = document.createElement('p');
+              empty.className = 'tt-muted';
+              empty.textContent = 'No classes match the current filters.';
+              host.appendChild(empty);
+              return;
+            }
+            filteredClasses = [cls];
+          }else if(filteredClasses.length === 0){
+            const empty = document.createElement('p');
+            empty.className = 'tt-muted';
+            empty.textContent = 'No classes match the current filters.';
+            host.appendChild(empty);
+            return;
           }
 
+          const employees = Array.isArray(state.employees) ? state.employees : [];
+          const filteredEmployees = employees.filter(emp=>{
+            if(!siteFilter) return true;
+            const org = emp && emp.organizationCode ? String(emp.organizationCode) : '';
+            return org === siteFilter;
+          });
+          const totalEmployees = filteredEmployees.length;
+          const totalClasses = filteredClasses.length;
+
+          const completionCountsByClass = new Map();
+          const categoryTotals = new Map();
+          const siteCategoryTotals = new Map();
+          let completionRecords = 0;
+
+          filteredEmployees.forEach(emp=>{
+            const bucket = state.completion[emp.id] || {};
+            const siteKey = emp && emp.organizationCode ? String(emp.organizationCode) : 'Unassigned';
+            let siteMap = siteCategoryTotals.get(siteKey);
+            if(!siteMap){
+              siteMap = new Map();
+              siteCategoryTotals.set(siteKey, siteMap);
+            }
+            filteredClasses.forEach(cls=>{
+              const completed = !!(bucket && bucket[cls.id]);
+              if(completed){
+                completionRecords += 1;
+                completionCountsByClass.set(cls.id, (completionCountsByClass.get(cls.id) || 0) + 1);
+              }
+              const categoryLabel = cls.area || 'Uncategorized';
+              const catEntry = categoryTotals.get(categoryLabel) || {completed:0,total:0};
+              catEntry.total += 1;
+              if(completed) catEntry.completed += 1;
+              categoryTotals.set(categoryLabel, catEntry);
+              let siteEntry = siteMap.get(categoryLabel);
+              if(!siteEntry){
+                siteEntry = {completed:0,total:0};
+                siteMap.set(categoryLabel, siteEntry);
+              }
+              siteEntry.total += 1;
+              if(completed) siteEntry.completed += 1;
+            });
+          });
+
           const totalOpportunities = totalEmployees * totalClasses;
-          const sumProgress = employees.reduce((total, emp)=> total + computeProgress(emp.id), 0);
+          const sumProgress = filteredEmployees.reduce((total, emp)=> total + computeProgress(emp.id, filteredClasses), 0);
           const averageProgress = totalEmployees ? Math.round(sumProgress / totalEmployees) : 0;
           const overallCompletion = totalOpportunities ? Math.round((completionRecords / totalOpportunities) * 100) : 0;
           const formatNumber = value=> typeof value === 'number' ? value.toLocaleString() : value;
@@ -3119,18 +3386,120 @@ window.TRAINING_TRACKER_COURSES = [
           });
           host.appendChild(cardsWrap);
 
-          if(totalEmployees === 0 || totalClasses === 0){
+          if(totalClasses === 0){
             const empty = document.createElement('p');
             empty.className = 'tt-muted';
-            empty.textContent = 'Add employees and classes to unlock detailed insights.';
+            empty.textContent = 'No classes match the current filters.';
+            host.appendChild(empty);
+            return;
+          }
+          if(totalEmployees === 0){
+            const empty = document.createElement('p');
+            empty.className = 'tt-muted';
+            empty.textContent = siteFilter ? 'No employees match the selected site.' : 'Add employees to unlock detailed insights.';
             host.appendChild(empty);
             return;
           }
 
-          const employeeProgress = employees.map(emp=>({
-            emp,
-            pct: computeProgress(emp.id)
-          }));
+          const categoryList = Array.from(categoryTotals.entries()).map(([category, stats])=>{
+            const pct = stats.total ? Math.round((stats.completed / stats.total) * 100) : 0;
+            return {category, pct, stats};
+          });
+          const chartCategories = [...categoryList].sort((a,b)=>{
+            if(b.pct !== a.pct) return b.pct - a.pct;
+            return a.category.localeCompare(b.category);
+          });
+          if(chartCategories.length){
+            const chartSection = document.createElement('section');
+            chartSection.className = 'tt-dash-section tt-dash-chart';
+            const heading = document.createElement('h3');
+            heading.textContent = 'Category completion';
+            chartSection.appendChild(heading);
+            const rows = document.createElement('div');
+            rows.className = 'tt-chart-rows';
+            chartCategories.forEach(item=>{
+              const row = document.createElement('div');
+              row.className = 'tt-chart-row';
+              const label = document.createElement('span');
+              label.className = 'tt-chart-label';
+              label.textContent = item.category;
+              const bar = document.createElement('div');
+              bar.className = 'tt-chart-bar';
+              const fill = document.createElement('div');
+              fill.className = 'tt-chart-fill';
+              const ratio = Math.max(0, Math.min(100, item.pct)) / 100;
+              fill.style.transform = `scaleX(${ratio})`;
+              bar.appendChild(fill);
+              const value = document.createElement('span');
+              value.className = 'tt-chart-value';
+              value.textContent = item.stats.total ? `${item.pct}%` : '—';
+              row.append(label, bar, value);
+              rows.appendChild(row);
+            });
+            chartSection.appendChild(rows);
+            host.appendChild(chartSection);
+          }
+
+          const categoryOrder = [...categoryList].sort((a,b)=> a.category.localeCompare(b.category)).map(item=>item.category);
+          const siteEntries = Array.from(siteCategoryTotals.entries()).sort((a,b)=> a[0].localeCompare(b[0]));
+          if(siteEntries.length && categoryOrder.length){
+            const tableSection = document.createElement('section');
+            tableSection.className = 'tt-dash-section';
+            const tableHeading = document.createElement('h3');
+            tableHeading.textContent = 'Category completion by site';
+            tableSection.appendChild(tableHeading);
+            const tableWrap = document.createElement('div');
+            tableWrap.className = 'tt-dash-table';
+            const table = document.createElement('table');
+            const thead = document.createElement('thead');
+            const headRow = document.createElement('tr');
+            const thSite = document.createElement('th');
+            thSite.scope = 'col';
+            thSite.textContent = 'Site';
+            headRow.appendChild(thSite);
+            categoryOrder.forEach(category=>{
+              const th = document.createElement('th');
+              th.scope = 'col';
+              th.textContent = category;
+              headRow.appendChild(th);
+            });
+            thead.appendChild(headRow);
+            const tbody = document.createElement('tbody');
+            siteEntries.forEach(([site, map])=>{
+              const tr = document.createElement('tr');
+              const th = document.createElement('th');
+              th.scope = 'row';
+              th.textContent = site || 'Unassigned';
+              tr.appendChild(th);
+              categoryOrder.forEach(category=>{
+                const stats = map.get(category) || {completed:0,total:0};
+                const pct = stats.total ? Math.round((stats.completed / stats.total) * 100) : 0;
+                const td = document.createElement('td');
+                td.textContent = stats.total ? `${pct}%` : '—';
+                if(stats.total){
+                  td.title = `${stats.completed} of ${stats.total}`;
+                }else{
+                  td.title = 'No assignments';
+                }
+                tr.appendChild(td);
+              });
+              tbody.appendChild(tr);
+            });
+            table.append(thead, tbody);
+            tableWrap.appendChild(table);
+            tableSection.appendChild(tableWrap);
+            host.appendChild(tableSection);
+          }
+
+          const employeeProgress = filteredEmployees.map(emp=>{
+            const bucket = state.completion[emp.id] || {};
+            const completed = filteredClasses.reduce((count, cls)=> count + (bucket && bucket[cls.id] ? 1 : 0), 0);
+            return {
+              emp,
+              pct: computeProgress(emp.id, filteredClasses),
+              completed
+            };
+          });
           const employeesNeedingAttention = employeeProgress
             .filter(item=>item.pct < 100)
             .sort((a,b)=> a.pct !== b.pct ? a.pct - b.pct : a.emp.name.localeCompare(b.emp.name))
@@ -3140,7 +3509,7 @@ window.TRAINING_TRACKER_COURSES = [
             .sort((a,b)=> a.pct !== b.pct ? b.pct - a.pct : a.emp.name.localeCompare(b.emp.name))
             .slice(0,5);
 
-          const classStats = state.catalog.map(cls=>{
+          const classStats = filteredClasses.map(cls=>{
             const done = completionCountsByClass.get(cls.id) || 0;
             const pct = totalEmployees ? Math.round((done / totalEmployees) * 100) : 0;
             return {cls, done, pct};
@@ -3186,8 +3555,7 @@ window.TRAINING_TRACKER_COURSES = [
               label.textContent = item.emp.name;
               const meta = document.createElement('span');
               meta.className = 'tt-dash-meta';
-              const completed = state.completionCounts[item.emp.id] || 0;
-              meta.textContent = `${item.pct}% • ${completed} of ${totalClasses}`;
+              meta.textContent = `${item.pct}% • ${item.completed} of ${totalClasses}`;
               li.append(label, meta);
               return li;
             }),
@@ -3198,8 +3566,7 @@ window.TRAINING_TRACKER_COURSES = [
               label.textContent = item.emp.name;
               const meta = document.createElement('span');
               meta.className = 'tt-dash-meta';
-              const completed = state.completionCounts[item.emp.id] || 0;
-              meta.textContent = `${item.pct}% • ${completed} of ${totalClasses}`;
+              meta.textContent = `${item.pct}% • ${item.completed} of ${totalClasses}`;
               li.append(label, meta);
               return li;
             }),
@@ -3251,7 +3618,7 @@ window.TRAINING_TRACKER_COURSES = [
         function renderOverviewRows(classList){
           cancelOverviewChunks();
           // Filter employees by the selected site filter before rendering rows
-          const selectedSite = elements.siteFilter ? String(elements.siteFilter.value || '') : '';
+          const selectedSite = filterState.site || '';
           const rows = (state.employees || []).filter(emp=>{
             if(!selectedSite) return true;
             // Compare organizationCode as strings; treat undefined as empty string
@@ -3316,18 +3683,18 @@ window.TRAINING_TRACKER_COURSES = [
           body.textContent = '';
           cancelOverviewChunks();
 
-          const searchTerm = (elements.overviewSearch?.value || '').trim().toLowerCase();
+          const searchTerm = (filterState.search || '').trim().toLowerCase();
           const matchesSearch = (cls)=>{
             if(!searchTerm) return true;
             const haystacks = [cls.short, cls.name];
             return haystacks.some(value=> String(value||'').toLowerCase().includes(searchTerm));
           };
 
-          const selectedClassId = elements.classFilter.value;
-          const cat = elements.catFilter.value;
-          const group = elements.groupFilter.value;
-          const level = elements.levelFilter.value;
-          const step = elements.stepFilter.value;
+          const selectedClassId = filterState.classId;
+          const cat = filterState.category;
+          const group = filterState.group;
+          const level = filterState.level;
+          const step = filterState.step;
 
           const filtered = state.catalog.filter(c=>
             (!cat || c.area===cat) &&
@@ -3781,15 +4148,87 @@ window.TRAINING_TRACKER_COURSES = [
             addListener(elements.resetButton, 'click', handleResetClick);
           }
 
-          addListener(elements.overviewSearch, 'input', ()=>requestRender('overview'));
-          addListener(elements.classFilter, 'change', ()=>requestRender('overview'));
-          addListener(elements.catFilter, 'change', ()=>{ elements.classFilter.value=''; requestRender('overview'); });
-          addListener(elements.groupFilter, 'change', ()=>{ elements.classFilter.value=''; requestRender('overview'); });
-          addListener(elements.levelFilter, 'change', ()=>{ elements.classFilter.value=''; requestRender('overview'); });
-          addListener(elements.stepFilter, 'change', ()=>{ elements.classFilter.value=''; requestRender('overview'); });
-          // When changing site filter, reset class filter and rebuild overview
+          const triggerTabRenders = ()=>{
+            requestRender('overview');
+            requestRender('dashboard');
+          };
+
+          addListener(elements.overviewSearch, 'input', ev=>{
+            if(updateFilterState('search', ev.target.value)){
+              triggerTabRenders();
+            }
+          });
+          addListener(elements.classFilter, 'change', ev=>{
+            if(updateFilterState('classId', ev.target.value)){
+              triggerTabRenders();
+            }
+          });
+          addListener(elements.catFilter, 'change', ev=>{
+            const changed = updateFilterState('category', ev.target.value);
+            const reset = updateFilterState('classId', '');
+            if(changed || reset){
+              triggerTabRenders();
+            }
+          });
+          addListener(elements.groupFilter, 'change', ev=>{
+            const changed = updateFilterState('group', ev.target.value);
+            const reset = updateFilterState('classId', '');
+            if(changed || reset){
+              triggerTabRenders();
+            }
+          });
+          addListener(elements.levelFilter, 'change', ev=>{
+            const changed = updateFilterState('level', ev.target.value);
+            const reset = updateFilterState('classId', '');
+            if(changed || reset){
+              triggerTabRenders();
+            }
+          });
+          addListener(elements.stepFilter, 'change', ev=>{
+            const changed = updateFilterState('step', ev.target.value);
+            const reset = updateFilterState('classId', '');
+            if(changed || reset){
+              triggerTabRenders();
+            }
+          });
           if(elements.siteFilter){
-            addListener(elements.siteFilter, 'change', ()=>{ elements.classFilter.value=''; requestRender('overview'); });
+            addListener(elements.siteFilter, 'change', ev=>{
+              const changed = updateFilterState('site', ev.target.value);
+              const reset = updateFilterState('classId', '');
+              if(changed || reset){
+                triggerTabRenders();
+              }
+            });
+          }
+
+          if(elements.dashboardFilters){
+            const dash = elements.dashboardFilters;
+            if(dash.search){
+              addListener(dash.search, 'input', ev=>{
+                if(updateFilterState('search', ev.target.value)){
+                  triggerTabRenders();
+                }
+              });
+            }
+            if(dash.classId){
+              addListener(dash.classId, 'change', ev=>{
+                if(updateFilterState('classId', ev.target.value)){
+                  triggerTabRenders();
+                }
+              });
+            }
+            const dashFacetHandler = (key)=> ev=>{
+              const changed = updateFilterState(key, ev.target.value);
+              const reset = updateFilterState('classId', '');
+              if(changed || reset){
+                triggerTabRenders();
+              }
+            };
+            if(dash.category) addListener(dash.category, 'change', dashFacetHandler('category'));
+            if(dash.group) addListener(dash.group, 'change', dashFacetHandler('group'));
+            if(dash.level) addListener(dash.level, 'change', dashFacetHandler('level'));
+            if(dash.step) addListener(dash.step, 'change', dashFacetHandler('step'));
+            if(dash.site) addListener(dash.site, 'change', dashFacetHandler('site'));
           }
 
           addListener(elements.catalogFilters.search, 'input', ()=>requestRender('catalog'));
@@ -3850,6 +4289,7 @@ window.TRAINING_TRACKER_COURSES = [
             refreshAfterClassChange(true);
             buildEmpPicker();
             requestRender('overview');
+            requestRender('dashboard');
             requestRender('employee');
             requestRender('emplist');
             requestRender('joblist');
