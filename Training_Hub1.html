@@ -2348,24 +2348,24 @@ window.TRAINING_TRACKER_COURSES = [
               });
             }
           }
-        }else{
-          persistenceMode = null;
-        }
+          if(!usePersistence){
+            persistenceMode = null;
+          }
 
-        if(embedded){
-          if(!Array.isArray(state.employees) || state.employees.length === 0){
-            state.employees = clone(embedded.employees || []);
+          if(embedded){
+            if(!Array.isArray(state.employees) || state.employees.length === 0){
+              state.employees = clone(embedded.employees || []);
+            }
+            if(!Array.isArray(state.classes) || state.classes.length === 0){
+              state.classes = prepareClassList(clone(embedded.classes || []));
+            }
+            if(!state.completion || typeof state.completion !== 'object' || Object.keys(state.completion).length === 0){
+              state.completion = clone(embedded.completion || {});
+            }
+            if(!state.completionMeta || typeof state.completionMeta !== 'object' || Object.keys(state.completionMeta).length === 0){
+              state.completionMeta = clone(embedded.completionMeta || {});
+            }
           }
-          if(!Array.isArray(state.classes) || state.classes.length === 0){
-            state.classes = prepareClassList(clone(embedded.classes || []));
-          }
-          if(!state.completion || typeof state.completion !== 'object' || Object.keys(state.completion).length === 0){
-            state.completion = clone(embedded.completion || {});
-          }
-          if(!state.completionMeta || typeof state.completionMeta !== 'object' || Object.keys(state.completionMeta).length === 0){
-            state.completionMeta = clone(embedded.completionMeta || {});
-          }
-        }
 
         state.catalog = enrichCatalog(state.classes);
         customClassCounter = state.classes.length;
@@ -2376,6 +2376,8 @@ window.TRAINING_TRACKER_COURSES = [
         if(embedded && typeof window !== 'undefined'){
           try{ delete window.__ttEmbeddedSnapshot; }
           catch(_err){}
+        }
+
         }
 
         function saveState(){
