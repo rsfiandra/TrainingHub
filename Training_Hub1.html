@@ -5,6 +5,72 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Training Tracker</title>
   <style>
+    .tt-loading-shell {
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:16px;
+      padding:64px 16px;
+      color:#6b7280;
+    }
+    .tt-loading-text {
+      font-size:14px;
+      font-weight:500;
+      text-align:center;
+    }
+    .tt-loading-spinner {
+      border:4px solid #e5e7eb;
+      border-top-color:#2563eb;
+      border-radius:999px;
+      width:40px;
+      height:40px;
+      animation:tt-spin 1s linear infinite;
+    }
+    .tt-skeleton-grid {
+      width:100%;
+      max-width:560px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .tt-skeleton-bar,
+    .tt-skeleton-row,
+    .tt-skeleton-chip {
+      position:relative;
+      overflow:hidden;
+      background:#e5e7eb;
+      border-radius:999px;
+    }
+    .tt-skeleton-bar { height:14px; }
+    .tt-skeleton-bar.tt-wide { width:80%; }
+    .tt-skeleton-bar.tt-medium { width:60%; }
+    .tt-skeleton-bar.tt-narrow { width:40%; }
+    .tt-skeleton-row {
+      height:42px;
+      border-radius:10px;
+    }
+    .tt-skeleton-chip {
+      height:20px;
+      width:96px;
+      border-radius:12px;
+    }
+    .tt-skeleton-shimmer::after {
+      content:"";
+      position:absolute;
+      inset:0;
+      transform:translateX(-100%);
+      background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.6), rgba(255,255,255,0));
+      animation:tt-shimmer 1.4s ease-in-out infinite;
+    }
+    @keyframes tt-spin {
+      0% { transform:rotate(0deg); }
+      100% { transform:rotate(360deg); }
+    }
+    @keyframes tt-shimmer {
+      0% { transform:translateX(-100%); }
+      100% { transform:translateX(100%); }
+    }
     .tt-app {
       --tt-brand-from:#2563eb; --tt-brand-to:#7c3aed;
       --tt-surface:#f6f7fb; --tt-panel:#ffffff; --tt-text:#111827; --tt-muted:#6b7280; --tt-ring:#e5e7eb;
@@ -554,9 +620,24 @@
       .tt-import-status { text-align:left; }
     }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js" integrity="sha512-lwAQ7Ez+KQEiC5EvhczHxVn9Yx8RJWb1x1oGf4bm/FYnGV8eK3oprmDdH+AnuXmeNn45/I4XESyqCCpt5TR1fA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
-  <div id="tt-root"></div>
+  <div id="tt-root">
+    <div id="tt-loadingShell" class="tt-loading-shell" role="status" aria-live="polite">
+      <div class="tt-loading-spinner" aria-hidden="true"></div>
+      <div class="tt-loading-text">Preparing Training Tracker…</div>
+      <div class="tt-skeleton-grid" aria-hidden="true">
+        <div class="tt-skeleton-bar tt-wide tt-skeleton-shimmer"></div>
+        <div class="tt-skeleton-bar tt-medium tt-skeleton-shimmer"></div>
+        <div class="tt-skeleton-bar tt-narrow tt-skeleton-shimmer"></div>
+        <div class="tt-skeleton-chip tt-skeleton-shimmer"></div>
+        <div class="tt-skeleton-row tt-skeleton-shimmer"></div>
+        <div class="tt-skeleton-row tt-skeleton-shimmer"></div>
+        <div class="tt-skeleton-row tt-skeleton-shimmer"></div>
+      </div>
+    </div>
+  </div>
   <script>
 window.TRAINING_TRACKER_COURSES = [
   {
@@ -1793,7 +1874,56 @@ window.TRAINING_TRACKER_COURSES = [
         try{
           const script = document.getElementById('ttEmbeddedState');
           if(!script || !script.textContent) return;
-          const snap = JSON.parse(script.textContent);
+          const raw = script.textContent.trim();
+          if(!raw) return;
+          const encoding = (script.getAttribute('data-encoding') || '').toLowerCase();
+          let snap = null;
+          let lastError = null;
+          const parseJson = text=>{
+            try{ return JSON.parse(text); }
+            catch(err){ lastError = err; return null; }
+          };
+
+          if(!snap && (encoding === 'json' || raw[0] === '{')){
+            snap = parseJson(raw);
+          }
+
+          if(!snap){
+            try{
+              const cleaned = raw.replace(/\s+/g, '');
+              let binary;
+              if(typeof atob === 'function'){
+                binary = atob(cleaned);
+              }else if(typeof window !== 'undefined' && typeof window.atob === 'function'){
+                binary = window.atob(cleaned);
+              }else if(typeof Buffer !== 'undefined'){
+                binary = Buffer.from(cleaned, 'base64').toString('binary');
+              }else{
+                throw new Error('base64 decoder unavailable');
+              }
+              const bytes = new Uint8Array(binary.length);
+              for(let i=0;i<binary.length;i+=1){
+                bytes[i] = binary.charCodeAt(i);
+              }
+              const pakoLib = (typeof window !== 'undefined' && window.pako && (typeof window.pako.ungzip === 'function' || typeof window.pako.inflate === 'function'))
+                ? window.pako
+                : (typeof pako !== 'undefined' ? pako : null);
+              if(!pakoLib){
+                throw new Error('pako unavailable for snapshot inflate');
+              }
+              const inflateFn = typeof pakoLib.ungzip === 'function' ? pakoLib.ungzip : pakoLib.inflate;
+              const json = inflateFn(bytes, {to:'string'});
+              snap = parseJson(json);
+            }catch(err){
+              lastError = err;
+            }
+          }
+
+          if(!snap){
+            if(lastError) console.warn('TrainingTracker: failed to parse embedded snapshot', lastError);
+            return;
+          }
+
           const payload = {
             completion: snap.completion || {},
             completionMeta: snap.completionMeta || {},
@@ -2217,6 +2347,11 @@ window.TRAINING_TRACKER_COURSES = [
 
       function createInstance(rootElement, options={}){
         if(!rootElement) throw new Error('TrainingTracker.mount requires a root element');
+        const loadingShell = rootElement.querySelector('#tt-loadingShell');
+        if(loadingShell){
+          loadingShell.classList.add('tt-hidden');
+          loadingShell.setAttribute('aria-hidden','true');
+        }
         const elements = createStructure();
         rootElement.appendChild(elements.app);
 
@@ -2542,6 +2677,34 @@ window.TRAINING_TRACKER_COURSES = [
         }
 
         async function exportEmbeddedSnapshot(){
+          const escapeJsonForHtml = value => value
+            .replace(/</g, '\\u003C')
+            .replace(/\u2028/g, '\\u2028')
+            .replace(/\u2029/g, '\\u2029');
+          const toBase64 = bytes => {
+            if(typeof btoa === 'function'){
+              let binary = '';
+              const chunk = 0x8000;
+              for(let i=0;i<bytes.length;i+=chunk){
+                const segment = bytes.subarray(i, i+chunk);
+                binary += String.fromCharCode.apply(null, segment);
+              }
+              return btoa(binary);
+            }
+            if(typeof window !== 'undefined' && typeof window.btoa === 'function'){
+              let binary = '';
+              const chunk = 0x8000;
+              for(let i=0;i<bytes.length;i+=chunk){
+                const segment = bytes.subarray(i, i+chunk);
+                binary += String.fromCharCode.apply(null, segment);
+              }
+              return window.btoa(binary);
+            }
+            if(typeof Buffer !== 'undefined'){
+              return Buffer.from(bytes).toString('base64');
+            }
+            throw new Error('base64 encoder unavailable');
+          };
           try{
             // Snapshot mirrors what saveState() persists
             const snapshot = {
@@ -2550,11 +2713,19 @@ window.TRAINING_TRACKER_COURSES = [
               classes: clone(state.classes),
               employees: clone(state.employees)
             };
-            // Clone full document and inject <script id="ttEmbeddedState" type="application/json">
+            // Clone full document and inject <script id="ttEmbeddedState">
             const docClone = document.documentElement.cloneNode(true);
             const rootClone = docClone.querySelector('#tt-root');
             if(rootClone){
-              rootClone.textContent = '';
+              const appClone = rootClone.querySelector('.tt-app');
+              if(appClone && appClone.parentNode){
+                appClone.parentNode.removeChild(appClone);
+              }
+              const loadingClone = rootClone.querySelector('#tt-loadingShell');
+              if(loadingClone){
+                loadingClone.classList.remove('tt-hidden');
+                loadingClone.removeAttribute('aria-hidden');
+              }
             }
             const statusClone = docClone.querySelector('#tt-importStatus');
             if(statusClone){
@@ -2566,12 +2737,28 @@ window.TRAINING_TRACKER_COURSES = [
             if(old && old.parentNode) old.parentNode.removeChild(old);
             const snapEl = docClone.ownerDocument.createElement('script');
             snapEl.id = 'ttEmbeddedState';
-            snapEl.type = 'application/json';
+            let payloadText = '';
+            let encoding = 'json';
+            let scriptType = 'application/json';
             const json = JSON.stringify(snapshot);
-            snapEl.textContent = json
-              .replace(/</g, '\\u003C')
-              .replace(/\u2028/g, '\\u2028')
-              .replace(/\u2029/g, '\\u2029');
+            const pakoLib = (typeof window !== 'undefined' && window.pako && typeof window.pako.gzip === 'function')
+              ? window.pako
+              : (typeof pako !== 'undefined' && typeof pako.gzip === 'function' ? pako : null);
+            if(pakoLib){
+              try{
+                const compressed = pakoLib.gzip(json);
+                payloadText = toBase64(compressed);
+                encoding = 'gzip-base64';
+                scriptType = 'application/octet-stream';
+              }catch(_err){
+                payloadText = escapeJsonForHtml(json);
+              }
+            }else{
+              payloadText = escapeJsonForHtml(json);
+            }
+            snapEl.type = scriptType;
+            snapEl.setAttribute('data-encoding', encoding);
+            snapEl.textContent = payloadText;
             (docClone.querySelector('head') || docClone).appendChild(snapEl);
 
             const htmlString = '<!DOCTYPE html>' + docClone.outerHTML;
