@@ -2392,6 +2392,16 @@ window.TRAINING_TRACKER_COURSES = [
             };
             // Clone full document and inject <script id="ttEmbeddedState" type="application/json">
             const docClone = document.documentElement.cloneNode(true);
+            const rootClone = docClone.querySelector('#tt-root');
+            if(rootClone){
+              rootClone.textContent = '';
+            }
+            const statusClone = docClone.querySelector('#tt-importStatus');
+            if(statusClone){
+              statusClone.textContent = '';
+              statusClone.classList.remove('tt-import-error');
+              statusClone.removeAttribute('title');
+            }
             const old = docClone.querySelector('#ttEmbeddedState');
             if(old && old.parentNode) old.parentNode.removeChild(old);
             const snapEl = docClone.ownerDocument.createElement('script');
