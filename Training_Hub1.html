@@ -1845,10 +1845,41 @@ window.TRAINING_TRACKER_COURSES = [
         };
         let customClassCounter = 0;
         let activeTab = 'overview';
+        let tabNeedsRender = {
+          overview: true,
+          employee: true,
+          catalog: true,
+          emplist: true,
+          joblist: true
+        };
+        const tabBuilders = {
+          overview: buildOverview,
+          employee: renderDetail,
+          catalog: buildCatalog,
+          emplist: buildEmpList,
+          joblist: buildJobList
+        };
         let overviewChunkCancel = null;
         const onChange = typeof options.onChange === 'function' ? options.onChange : null;
 
         const usePersistence = !options || (Object.keys(options).length === 0);
+
+        function renderTab(which){
+          const builder = tabBuilders[which];
+          if(!builder) return;
+          if(tabNeedsRender[which]){
+            builder();
+            tabNeedsRender[which] = false;
+          }
+        }
+
+        function requestRender(which){
+          if(!(which in tabNeedsRender)) return;
+          tabNeedsRender[which] = true;
+          if(activeTab === which){
+            renderTab(which);
+          }
+        }
 
         function bumpCompletionCount(empId, delta){
           if(!delta) return;
@@ -2051,7 +2082,10 @@ window.TRAINING_TRACKER_COURSES = [
         function toggleCompletion(empId, classId){
           const current = !!(state.completion[empId]?.[classId]);
           const changed = setCompletion(empId, classId, !current);
-          if(changed) buildOverview();
+          if(changed){
+            requestRender('overview');
+            requestRender('employee');
+          }
         }
 
         function getCompletionMeta(empId, classId){
@@ -2465,8 +2499,8 @@ window.TRAINING_TRACKER_COURSES = [
               refreshAfterClassChange(true);
             }else{
               saveState();
-              if(activeTab === 'overview') buildOverview();
-              if(activeTab === 'employee') renderDetail();
+              requestRender('overview');
+              requestRender('employee');
             }
 
             if(summary.employeesAdded > 0){
@@ -2477,9 +2511,10 @@ window.TRAINING_TRACKER_COURSES = [
               }
             }
 
-            if(activeTab === 'employee'){
-              renderDetail();
-            }
+            requestRender('emplist');
+            requestRender('joblist');
+
+            requestRender('employee');
 
             if(changedRecords.size && onChange){
               changedRecords.forEach(record=>{
@@ -2545,12 +2580,13 @@ window.TRAINING_TRACKER_COURSES = [
               showImportSummary(summary);
               // After a successful import, rebuild facet options (to update site list) and refresh views
               buildFacetOptions();
-              // Rebuild the overview to reflect new employees/classes
-              if(activeTab === 'overview'){
-                buildOverview();
-              }
               // Rebuild employee picker for detail view and other lists
               buildEmpPicker();
+              requestRender('overview');
+              requestRender('employee');
+              requestRender('catalog');
+              requestRender('emplist');
+              requestRender('joblist');
             }catch(err){
               showImportSummary({error: err?.message || 'Import failed.'});
             }
@@ -2611,9 +2647,9 @@ window.TRAINING_TRACKER_COURSES = [
           state.catalog = enrichCatalog(state.classes);
           buildFacetOptions();
           saveState();
-          if(activeTab === 'overview') buildOverview();
-          if(activeTab === 'employee') renderDetail();
-          if(rebuildCatalog) buildCatalog();
+          requestRender('overview');
+          requestRender('employee');
+          if(rebuildCatalog) requestRender('catalog');
         }
 
         function finalizeCatalogRow(row){
@@ -2632,7 +2668,7 @@ window.TRAINING_TRACKER_COURSES = [
             const updated = state.catalog[newIndex];
             const filterState = getCatalogFilterState();
             if(!passesCatalogFilters(updated, filterState)){
-              buildCatalog();
+              requestRender('catalog');
               return;
             }
             delete row.dataset.newRow;
@@ -3124,12 +3160,7 @@ window.TRAINING_TRACKER_COURSES = [
           if(which === 'catalog') elements.tabCatalog.setAttribute('aria-current','page');
           if(which === 'emplist' && elements.tabEmpList) elements.tabEmpList.setAttribute('aria-current','page');
           if(which === 'joblist' && elements.tabJobList) elements.tabJobList.setAttribute('aria-current','page');
-          // Build content for the selected tab
-          if(which === 'overview') buildOverview();
-          if(which === 'employee') renderDetail();
-          if(which === 'catalog') buildCatalog();
-          if(which === 'emplist') buildEmpList();
-          if(which === 'joblist') buildJobList();
+          renderTab(which);
         }
 
         function updateStatusButton(row, empId, classId){
@@ -3459,27 +3490,27 @@ window.TRAINING_TRACKER_COURSES = [
             addListener(elements.resetButton, 'click', handleResetClick);
           }
 
-          addListener(elements.classFilter, 'change', ()=>buildOverview());
-          addListener(elements.catFilter, 'change', ()=>{ elements.classFilter.value=''; buildOverview(); });
-          addListener(elements.groupFilter, 'change', ()=>{ elements.classFilter.value=''; buildOverview(); });
-          addListener(elements.levelFilter, 'change', ()=>{ elements.classFilter.value=''; buildOverview(); });
-          addListener(elements.stepFilter, 'change', ()=>{ elements.classFilter.value=''; buildOverview(); });
+          addListener(elements.classFilter, 'change', ()=>requestRender('overview'));
+          addListener(elements.catFilter, 'change', ()=>{ elements.classFilter.value=''; requestRender('overview'); });
+          addListener(elements.groupFilter, 'change', ()=>{ elements.classFilter.value=''; requestRender('overview'); });
+          addListener(elements.levelFilter, 'change', ()=>{ elements.classFilter.value=''; requestRender('overview'); });
+          addListener(elements.stepFilter, 'change', ()=>{ elements.classFilter.value=''; requestRender('overview'); });
           // When changing site filter, reset class filter and rebuild overview
           if(elements.siteFilter){
-            addListener(elements.siteFilter, 'change', ()=>{ elements.classFilter.value=''; buildOverview(); });
+            addListener(elements.siteFilter, 'change', ()=>{ elements.classFilter.value=''; requestRender('overview'); });
           }
 
-          addListener(elements.catalogFilters.search, 'input', ()=>buildCatalog());
-          addListener(elements.catalogFilters.cat, 'change', ()=>buildCatalog());
-          addListener(elements.catalogFilters.group, 'change', ()=>buildCatalog());
-          addListener(elements.catalogFilters.level, 'change', ()=>buildCatalog());
-          addListener(elements.catalogFilters.step, 'change', ()=>buildCatalog());
+          addListener(elements.catalogFilters.search, 'input', ()=>requestRender('catalog'));
+          addListener(elements.catalogFilters.cat, 'change', ()=>requestRender('catalog'));
+          addListener(elements.catalogFilters.group, 'change', ()=>requestRender('catalog'));
+          addListener(elements.catalogFilters.level, 'change', ()=>requestRender('catalog'));
+          addListener(elements.catalogFilters.step, 'change', ()=>requestRender('catalog'));
 
-          addListener(elements.empFilters.empSel, 'change', ()=>renderDetail());
-          addListener(elements.empFilters.empCat, 'change', ()=>renderDetail());
-          addListener(elements.empFilters.empGroup, 'change', ()=>renderDetail());
-          addListener(elements.empFilters.empLevel, 'change', ()=>renderDetail());
-          addListener(elements.empFilters.empStep, 'change', ()=>renderDetail());
+          addListener(elements.empFilters.empSel, 'change', ()=>requestRender('employee'));
+          addListener(elements.empFilters.empCat, 'change', ()=>requestRender('employee'));
+          addListener(elements.empFilters.empGroup, 'change', ()=>requestRender('employee'));
+          addListener(elements.empFilters.empLevel, 'change', ()=>requestRender('employee'));
+          addListener(elements.empFilters.empStep, 'change', ()=>requestRender('employee'));
         }
 
         async function init(){
@@ -3526,8 +3557,10 @@ window.TRAINING_TRACKER_COURSES = [
             }
             refreshAfterClassChange(true);
             buildEmpPicker();
-            buildOverview();
-            renderDetail();
+            requestRender('overview');
+            requestRender('employee');
+            requestRender('emplist');
+            requestRender('joblist');
           },
           importText(text, options){
             return processImportText(text, options || {});
