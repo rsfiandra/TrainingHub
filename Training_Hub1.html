@@ -183,6 +183,84 @@
       border-bottom:1px solid var(--tt-ring);
       vertical-align:top;
     }
+    .tt-dashboard {
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+    }
+    .tt-dash-cards {
+      display:grid;
+      gap:12px;
+      grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));
+    }
+    .tt-dash-card {
+      border-radius:12px;
+      border:1px solid var(--tt-ring);
+      padding:16px;
+      background:linear-gradient(135deg,rgba(37,99,235,0.08),rgba(124,58,237,0.08));
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-height:92px;
+      justify-content:center;
+    }
+    .tt-dash-card strong {
+      font-size:22px;
+      font-weight:700;
+    }
+    .tt-dash-card span {
+      font-size:13px;
+      color:var(--tt-muted);
+    }
+    .tt-dash-grid {
+      display:grid;
+      gap:16px;
+      grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));
+    }
+    .tt-dash-section {
+      border:1px solid var(--tt-ring);
+      border-radius:12px;
+      background:#fff;
+      padding:16px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      min-height:160px;
+    }
+    .tt-dash-section h3 {
+      margin:0;
+      font-size:15px;
+    }
+    .tt-dash-list {
+      list-style:none;
+      margin:0;
+      padding:0;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .tt-dash-list li {
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      border-bottom:1px solid var(--tt-ring);
+      padding-bottom:8px;
+    }
+    .tt-dash-list li:last-child {
+      border-bottom:none;
+      padding-bottom:0;
+    }
+    .tt-dash-label {
+      font-weight:600;
+      font-size:13px;
+    }
+    .tt-dash-meta {
+      font-size:12px;
+      color:var(--tt-muted);
+      text-align:right;
+      white-space:nowrap;
+    }
     #tt-overviewTbl thead th.tt-emp-col,
     #tt-overviewTbl tbody th.tt-emp-col {
       position:sticky;
@@ -1539,6 +1617,18 @@ window.TRAINING_TRACKER_COURSES = [
         return {wrapper, select};
       }
 
+      function buildTextInput(labelText, id, placeholder=''){
+        const wrapper = document.createElement('label');
+        wrapper.setAttribute('for', id);
+        wrapper.textContent = labelText+':';
+        const input = document.createElement('input');
+        input.type = 'search';
+        input.id = id;
+        if(placeholder) input.placeholder = placeholder;
+        wrapper.appendChild(input);
+        return {wrapper, input};
+      }
+
       function buildCheckbox(labelText, id){
         const label = document.createElement('label');
         label.className = 'tt-checkbox';
@@ -1601,6 +1691,11 @@ window.TRAINING_TRACKER_COURSES = [
         subnav.id = 'tt-subnav';
         const pilltabs = document.createElement('div');
         pilltabs.className = 'tt-pilltabs';
+        const tabDashboard = document.createElement('button');
+        tabDashboard.id = 'tt-tab-dashboard';
+        tabDashboard.className = 'tt-pilltab';
+        tabDashboard.type = 'button';
+        tabDashboard.textContent = 'Dashboard';
         const tabOverview = document.createElement('button');
         tabOverview.id = 'tt-tab-overview';
         tabOverview.className = 'tt-pilltab';
@@ -1616,7 +1711,7 @@ window.TRAINING_TRACKER_COURSES = [
         tabCatalog.className = 'tt-pilltab';
         tabCatalog.type = 'button';
         tabCatalog.textContent = 'All Classes';
-        pilltabs.append(tabOverview, tabEmployee, tabCatalog);
+        pilltabs.append(tabDashboard, tabOverview, tabEmployee, tabCatalog);
         // Additional tabs for Employee List and Job Titles
         const tabEmpList = document.createElement('button');
         tabEmpList.id = 'tt-tab-emplist';
@@ -1631,6 +1726,19 @@ window.TRAINING_TRACKER_COURSES = [
         pilltabs.append(tabEmpList, tabJobList);
         subnav.appendChild(pilltabs);
 
+        const dashboard = document.createElement('section');
+        dashboard.id = 'tt-screen-dashboard';
+        dashboard.className = 'tt-panel tt-hidden';
+        const dashboardHeading = document.createElement('h2');
+        dashboardHeading.textContent = 'Dashboard';
+        const dashboardIntro = document.createElement('p');
+        dashboardIntro.className = 'tt-muted';
+        dashboardIntro.textContent = 'Track overall training momentum at a glance.';
+        const dashboardBody = document.createElement('div');
+        dashboardBody.id = 'tt-dashboardBody';
+        dashboardBody.className = 'tt-dashboard';
+        dashboard.append(dashboardHeading, dashboardIntro, dashboardBody);
+
         const overview = document.createElement('section');
         overview.id = 'tt-screen-overview';
         overview.className = 'tt-panel';
@@ -1638,6 +1746,7 @@ window.TRAINING_TRACKER_COURSES = [
         overviewHeading.textContent = 'Manager Overview';
         const overviewFilters = document.createElement('div');
         overviewFilters.className = 'tt-row';
+        const overviewSearch = buildTextInput('Search Classes', 'tt-overviewSearch', 'Filter by name…');
         const classFilter = buildSelect('Class', 'tt-classFilter');
         const catFilter = buildSelect('Category', 'tt-catFilter');
         const groupFilter = buildSelect('Group', 'tt-groupFilter');
@@ -1649,7 +1758,7 @@ window.TRAINING_TRACKER_COURSES = [
         overviewHint.className = 'tt-muted';
         overviewHint.textContent = 'Click a row to open that employee.';
         // Append all filters including the new site filter, followed by the hint
-        overviewFilters.append(classFilter.wrapper, catFilter.wrapper, groupFilter.wrapper, levelFilter.wrapper, stepFilter.wrapper, siteFilter.wrapper, overviewHint);
+        overviewFilters.append(overviewSearch.wrapper, classFilter.wrapper, catFilter.wrapper, groupFilter.wrapper, levelFilter.wrapper, stepFilter.wrapper, siteFilter.wrapper, overviewHint);
         const grid = document.createElement('div');
         grid.className = 'tt-grid';
         const overviewTable = document.createElement('table');
@@ -1761,7 +1870,7 @@ window.TRAINING_TRACKER_COURSES = [
         jobList.append(jobListHeading, jobListGrid);
 
         // Append new panels to the app
-        app.append(headerPanel, subnav, overview, employee, catalog, empList, jobList);
+        app.append(headerPanel, subnav, dashboard, overview, employee, catalog, empList, jobList);
 
         return {
           app,
@@ -1772,10 +1881,14 @@ window.TRAINING_TRACKER_COURSES = [
           importInput,
           importStatus,
           resetButton: resetBtn,
+          tabDashboard,
           tabOverview,
           tabEmployee,
           tabCatalog,
+          dashboardSection: dashboard,
+          dashboardBody,
           overviewSection: overview,
+          overviewSearch: overviewSearch.input,
           overviewTable,
           overviewHead,
           overviewBody,
@@ -1846,6 +1959,7 @@ window.TRAINING_TRACKER_COURSES = [
         let customClassCounter = 0;
         let activeTab = 'overview';
         let tabNeedsRender = {
+          dashboard: true,
           overview: true,
           employee: true,
           catalog: true,
@@ -1853,6 +1967,7 @@ window.TRAINING_TRACKER_COURSES = [
           joblist: true
         };
         const tabBuilders = {
+          dashboard: buildDashboard,
           overview: buildOverview,
           employee: renderDetail,
           catalog: buildCatalog,
@@ -2085,6 +2200,7 @@ window.TRAINING_TRACKER_COURSES = [
           if(changed){
             requestRender('overview');
             requestRender('employee');
+            requestRender('dashboard');
           }
         }
 
@@ -2501,6 +2617,7 @@ window.TRAINING_TRACKER_COURSES = [
               saveState();
               requestRender('overview');
               requestRender('employee');
+              requestRender('dashboard');
             }
 
             if(summary.employeesAdded > 0){
@@ -2649,6 +2766,7 @@ window.TRAINING_TRACKER_COURSES = [
           saveState();
           requestRender('overview');
           requestRender('employee');
+          requestRender('dashboard');
           if(rebuildCatalog) requestRender('catalog');
         }
 
@@ -2950,6 +3068,167 @@ window.TRAINING_TRACKER_COURSES = [
           return Math.max(0, Math.min(100, pct));
         }
 
+        function buildDashboard(){
+          const host = elements.dashboardBody;
+          if(!host) return;
+          host.textContent = '';
+
+          const employees = Array.isArray(state.employees) ? state.employees : [];
+          const totalEmployees = employees.length;
+          const totalClasses = state.catalog.length;
+
+          const completionCountsByClass = new Map();
+          let completionRecords = 0;
+          if(state.completion && typeof state.completion === 'object'){
+            Object.keys(state.completion).forEach(empId=>{
+              const bucket = state.completion[empId];
+              if(!bucket || typeof bucket !== 'object') return;
+              Object.keys(bucket).forEach(classId=>{
+                if(bucket[classId]){
+                  completionRecords += 1;
+                  completionCountsByClass.set(classId, (completionCountsByClass.get(classId) || 0) + 1);
+                }
+              });
+            });
+          }
+
+          const totalOpportunities = totalEmployees * totalClasses;
+          const sumProgress = employees.reduce((total, emp)=> total + computeProgress(emp.id), 0);
+          const averageProgress = totalEmployees ? Math.round(sumProgress / totalEmployees) : 0;
+          const overallCompletion = totalOpportunities ? Math.round((completionRecords / totalOpportunities) * 100) : 0;
+          const formatNumber = value=> typeof value === 'number' ? value.toLocaleString() : value;
+
+          const cardsWrap = document.createElement('div');
+          cardsWrap.className = 'tt-dash-cards';
+          const cards = [
+            {label: 'Employees tracked', value: formatNumber(totalEmployees)},
+            {label: 'Classes available', value: formatNumber(totalClasses)},
+            {label: 'Completion records', value: formatNumber(completionRecords)},
+            {label: 'Average employee progress', value: (totalEmployees && totalClasses) ? `${averageProgress}%` : '—'},
+            {label: 'Overall completion rate', value: totalOpportunities ? `${overallCompletion}%` : '—'}
+          ];
+          cards.forEach(card=>{
+            const div = document.createElement('div');
+            div.className = 'tt-dash-card';
+            const strong = document.createElement('strong');
+            strong.textContent = card.value;
+            const span = document.createElement('span');
+            span.textContent = card.label;
+            div.append(strong, span);
+            cardsWrap.appendChild(div);
+          });
+          host.appendChild(cardsWrap);
+
+          if(totalEmployees === 0 || totalClasses === 0){
+            const empty = document.createElement('p');
+            empty.className = 'tt-muted';
+            empty.textContent = 'Add employees and classes to unlock detailed insights.';
+            host.appendChild(empty);
+            return;
+          }
+
+          const employeeProgress = employees.map(emp=>({
+            emp,
+            pct: computeProgress(emp.id)
+          }));
+          const employeesNeedingAttention = employeeProgress
+            .filter(item=>item.pct < 100)
+            .sort((a,b)=> a.pct !== b.pct ? a.pct - b.pct : a.emp.name.localeCompare(b.emp.name))
+            .slice(0,5);
+          const topPerformers = employeeProgress
+            .filter(item=>item.pct > 0)
+            .sort((a,b)=> a.pct !== b.pct ? b.pct - a.pct : a.emp.name.localeCompare(b.emp.name))
+            .slice(0,5);
+
+          const classStats = state.catalog.map(cls=>{
+            const done = completionCountsByClass.get(cls.id) || 0;
+            const pct = totalEmployees ? Math.round((done / totalEmployees) * 100) : 0;
+            return {cls, done, pct};
+          });
+          const classesNeedingAttention = classStats
+            .filter(item=>item.pct < 100)
+            .sort((a,b)=> a.pct !== b.pct ? a.pct - b.pct : (a.cls.name || a.cls.short || '').localeCompare(b.cls.name || b.cls.short || ''))
+            .slice(0,5);
+          const classLeaders = classStats
+            .filter(item=>item.done > 0)
+            .sort((a,b)=> a.pct !== b.pct ? b.pct - a.pct : (a.cls.name || a.cls.short || '').localeCompare(b.cls.name || b.cls.short || ''))
+            .slice(0,5);
+
+          const buildSection = (title, items, emptyMessage, builder)=>{
+            const section = document.createElement('section');
+            section.className = 'tt-dash-section';
+            const heading = document.createElement('h3');
+            heading.textContent = title;
+            section.appendChild(heading);
+            if(!items.length){
+              const empty = document.createElement('p');
+              empty.className = 'tt-muted';
+              empty.textContent = emptyMessage;
+              section.appendChild(empty);
+              return section;
+            }
+            const list = document.createElement('ul');
+            list.className = 'tt-dash-list';
+            items.forEach(item=>{
+              list.appendChild(builder(item));
+            });
+            section.appendChild(list);
+            return section;
+          };
+
+          const grid = document.createElement('div');
+          grid.className = 'tt-dash-grid';
+          grid.append(
+            buildSection('Employees needing attention', employeesNeedingAttention, 'Everyone is fully trained.', item=>{
+              const li = document.createElement('li');
+              const label = document.createElement('span');
+              label.className = 'tt-dash-label';
+              label.textContent = item.emp.name;
+              const meta = document.createElement('span');
+              meta.className = 'tt-dash-meta';
+              const completed = state.completionCounts[item.emp.id] || 0;
+              meta.textContent = `${item.pct}% • ${completed} of ${totalClasses}`;
+              li.append(label, meta);
+              return li;
+            }),
+            buildSection('Top performers', topPerformers, 'No completion records yet.', item=>{
+              const li = document.createElement('li');
+              const label = document.createElement('span');
+              label.className = 'tt-dash-label';
+              label.textContent = item.emp.name;
+              const meta = document.createElement('span');
+              meta.className = 'tt-dash-meta';
+              const completed = state.completionCounts[item.emp.id] || 0;
+              meta.textContent = `${item.pct}% • ${completed} of ${totalClasses}`;
+              li.append(label, meta);
+              return li;
+            }),
+            buildSection('Classes needing attention', classesNeedingAttention, 'All classes are fully completed.', item=>{
+              const li = document.createElement('li');
+              const label = document.createElement('span');
+              label.className = 'tt-dash-label';
+              label.textContent = item.cls.name || item.cls.short || 'Untitled class';
+              const meta = document.createElement('span');
+              meta.className = 'tt-dash-meta';
+              meta.textContent = `${item.pct}% • ${item.done} of ${totalEmployees}`;
+              li.append(label, meta);
+              return li;
+            }),
+            buildSection('High-performing classes', classLeaders, 'No completions recorded yet.', item=>{
+              const li = document.createElement('li');
+              const label = document.createElement('span');
+              label.className = 'tt-dash-label';
+              label.textContent = item.cls.name || item.cls.short || 'Untitled class';
+              const meta = document.createElement('span');
+              meta.className = 'tt-dash-meta';
+              meta.textContent = `${item.pct}% • ${item.done} of ${totalEmployees}`;
+              li.append(label, meta);
+              return li;
+            })
+          );
+          host.appendChild(grid);
+        }
+
         function cancelOverviewChunks(){
           if(overviewChunkCancel){
             cancelIdleHandle(overviewChunkCancel);
@@ -3037,6 +3316,13 @@ window.TRAINING_TRACKER_COURSES = [
           body.textContent = '';
           cancelOverviewChunks();
 
+          const searchTerm = (elements.overviewSearch?.value || '').trim().toLowerCase();
+          const matchesSearch = (cls)=>{
+            if(!searchTerm) return true;
+            const haystacks = [cls.short, cls.name];
+            return haystacks.some(value=> String(value||'').toLowerCase().includes(searchTerm));
+          };
+
           const selectedClassId = elements.classFilter.value;
           const cat = elements.catFilter.value;
           const group = elements.groupFilter.value;
@@ -3047,12 +3333,13 @@ window.TRAINING_TRACKER_COURSES = [
             (!cat || c.area===cat) &&
             (!group || c.group===group) &&
             (!level || c.level===level) &&
-            (!step || String(c.step)===String(step))
+            (!step || String(c.step)===String(step)) &&
+            matchesSearch(c)
           );
 
           if(selectedClassId){
             const cls = state.catalog.find(c=>c.id===selectedClassId);
-            if(!cls){
+            if(!cls || !matchesSearch(cls)){
               setOverviewEmpty('No classes match the current filters.');
               return;
             }
@@ -3138,6 +3425,7 @@ window.TRAINING_TRACKER_COURSES = [
         function setTab(which){
           activeTab = which;
           const panels = {
+            dashboard: elements.dashboardSection,
             overview: elements.overviewSection,
             employee: elements.employeeSection,
             catalog: elements.catalogSection,
@@ -3149,12 +3437,14 @@ window.TRAINING_TRACKER_COURSES = [
           });
           if(panels[which]) panels[which].classList.remove('tt-hidden');
           // Reset aria-current on all tabs
+          elements.tabDashboard.removeAttribute('aria-current');
           elements.tabOverview.removeAttribute('aria-current');
           elements.tabEmployee.removeAttribute('aria-current');
           elements.tabCatalog.removeAttribute('aria-current');
           if(elements.tabEmpList) elements.tabEmpList.removeAttribute('aria-current');
           if(elements.tabJobList) elements.tabJobList.removeAttribute('aria-current');
           // Set aria-current on the selected tab
+          if(which === 'dashboard') elements.tabDashboard.setAttribute('aria-current','page');
           if(which === 'overview') elements.tabOverview.setAttribute('aria-current','page');
           if(which === 'employee') elements.tabEmployee.setAttribute('aria-current','page');
           if(which === 'catalog') elements.tabCatalog.setAttribute('aria-current','page');
@@ -3470,6 +3760,7 @@ window.TRAINING_TRACKER_COURSES = [
         }
 
         function wireEvents(){
+          addListener(elements.tabDashboard, 'click', ()=>setTab('dashboard'));
           addListener(elements.tabOverview, 'click', ()=>setTab('overview'));
           addListener(elements.tabEmployee, 'click', ()=>setTab('employee'));
           addListener(elements.tabCatalog, 'click', ()=>setTab('catalog'));
@@ -3490,6 +3781,7 @@ window.TRAINING_TRACKER_COURSES = [
             addListener(elements.resetButton, 'click', handleResetClick);
           }
 
+          addListener(elements.overviewSearch, 'input', ()=>requestRender('overview'));
           addListener(elements.classFilter, 'change', ()=>requestRender('overview'));
           addListener(elements.catFilter, 'change', ()=>{ elements.classFilter.value=''; requestRender('overview'); });
           addListener(elements.groupFilter, 'change', ()=>{ elements.classFilter.value=''; requestRender('overview'); });
