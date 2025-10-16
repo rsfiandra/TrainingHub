@@ -1672,6 +1672,9 @@ window.TRAINING_TRACKER_COURSES = [
             classes: Array.isArray(snap.classes) ? snap.classes : [],
             employees: Array.isArray(snap.employees) ? snap.employees : []
           };
+          if(typeof window !== 'undefined'){
+            window.__ttEmbeddedSnapshot = payload;
+          }
           // Persist to both stores; loadData() will merge these on boot.
           if(typeof localStorage !== 'undefined'){
             localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -2224,10 +2227,11 @@ window.TRAINING_TRACKER_COURSES = [
         }
 
         async function loadData(){
-          state.employees = clone(options.employees || defaultEmployees);
-          state.classes = prepareClassList(clone(options.classes || defaultClasses));
-          state.completion = clone(options.completions || {});
-          state.completionMeta = clone(options.completionMeta || {});
+          const embedded = (typeof window !== 'undefined' && window.__ttEmbeddedSnapshot) || null;
+          state.employees = clone(options.employees || embedded?.employees || defaultEmployees);
+          state.classes = prepareClassList(clone(options.classes || embedded?.classes || defaultClasses));
+          state.completion = clone(options.completions || embedded?.completion || {});
+          state.completionMeta = clone(options.completionMeta || embedded?.completionMeta || {});
 
           if(usePersistence){
             let restoredPersisted = false;
@@ -2349,6 +2353,10 @@ window.TRAINING_TRACKER_COURSES = [
           if(!state.completion || typeof state.completion !== 'object') state.completion = {};
           if(!state.completionMeta || typeof state.completionMeta !== 'object') state.completionMeta = {};
           recomputeCompletionCounts();
+          if(embedded && typeof window !== 'undefined'){
+            try{ delete window.__ttEmbeddedSnapshot; }
+            catch(_err){}
+          }
         }
 
         function saveState(){
