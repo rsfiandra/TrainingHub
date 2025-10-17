@@ -5,6 +5,72 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Training Tracker</title>
   <style>
+    .tt-loading-shell {
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:16px;
+      padding:64px 16px;
+      color:#6b7280;
+    }
+    .tt-loading-text {
+      font-size:14px;
+      font-weight:500;
+      text-align:center;
+    }
+    .tt-loading-spinner {
+      border:4px solid #e5e7eb;
+      border-top-color:#2563eb;
+      border-radius:999px;
+      width:40px;
+      height:40px;
+      animation:tt-spin 1s linear infinite;
+    }
+    .tt-skeleton-grid {
+      width:100%;
+      max-width:560px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .tt-skeleton-bar,
+    .tt-skeleton-row,
+    .tt-skeleton-chip {
+      position:relative;
+      overflow:hidden;
+      background:#e5e7eb;
+      border-radius:999px;
+    }
+    .tt-skeleton-bar { height:14px; }
+    .tt-skeleton-bar.tt-wide { width:80%; }
+    .tt-skeleton-bar.tt-medium { width:60%; }
+    .tt-skeleton-bar.tt-narrow { width:40%; }
+    .tt-skeleton-row {
+      height:42px;
+      border-radius:10px;
+    }
+    .tt-skeleton-chip {
+      height:20px;
+      width:96px;
+      border-radius:12px;
+    }
+    .tt-skeleton-shimmer::after {
+      content:"";
+      position:absolute;
+      inset:0;
+      transform:translateX(-100%);
+      background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.6), rgba(255,255,255,0));
+      animation:tt-shimmer 1.4s ease-in-out infinite;
+    }
+    @keyframes tt-spin {
+      0% { transform:rotate(0deg); }
+      100% { transform:rotate(360deg); }
+    }
+    @keyframes tt-shimmer {
+      0% { transform:translateX(-100%); }
+      100% { transform:translateX(100%); }
+    }
     .tt-app {
       --tt-brand-from:#2563eb; --tt-brand-to:#7c3aed;
       --tt-surface:#f6f7fb; --tt-panel:#ffffff; --tt-text:#111827; --tt-muted:#6b7280; --tt-ring:#e5e7eb;
@@ -152,6 +218,13 @@
       width:max-content;
       min-width:100%;
     }
+    #tt-screen-overview .tt-grid {
+      overflow-x:auto;
+    }
+    #tt-screen-overview .tt-grid table {
+      width:max-content;
+      min-width:max-content;
+    }
     .tt-grid thead th {
       background:linear-gradient(90deg,var(--tt-brand-from),var(--tt-brand-to));
       color:#fff;
@@ -160,6 +233,21 @@
       font-weight:700;
       border-right:1px solid rgba(255,255,255,0.25);
       box-shadow:0 1px 0 rgba(17,24,39,0.08);
+    }
+    .tt-grid thead th.tt-sortable,
+    .tt-dash-table thead th.tt-sortable {
+      cursor:pointer;
+      user-select:none;
+    }
+    .tt-grid thead th.tt-sort-asc::after,
+    .tt-dash-table thead th.tt-sort-asc::after {
+      content:' \25B2';
+      font-size:10px;
+    }
+    .tt-grid thead th.tt-sort-desc::after,
+    .tt-dash-table thead th.tt-sort-desc::after {
+      content:' \25BC';
+      font-size:10px;
     }
     #tt-overviewTbl thead th {
       position:sticky;
@@ -182,6 +270,164 @@
       border-right:1px solid var(--tt-ring);
       border-bottom:1px solid var(--tt-ring);
       vertical-align:top;
+    }
+    .tt-dashboard {
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+    }
+    .tt-dash-filters {
+      align-items:flex-end;
+    }
+    .tt-dash-cards {
+      display:grid;
+      gap:12px;
+      grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));
+    }
+    .tt-dash-card {
+      border-radius:12px;
+      border:1px solid var(--tt-ring);
+      padding:16px;
+      background:linear-gradient(135deg,rgba(37,99,235,0.08),rgba(124,58,237,0.08));
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-height:92px;
+      justify-content:center;
+    }
+    .tt-dash-card strong {
+      font-size:22px;
+      font-weight:700;
+    }
+    .tt-dash-card span {
+      font-size:13px;
+      color:var(--tt-muted);
+    }
+    .tt-dash-grid {
+      display:grid;
+      gap:16px;
+      grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));
+    }
+    .tt-dash-section {
+      border:1px solid var(--tt-ring);
+      border-radius:12px;
+      background:#fff;
+      padding:16px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      min-height:160px;
+    }
+    .tt-dash-section h3 {
+      margin:0;
+      font-size:15px;
+    }
+    .tt-dash-list {
+      list-style:none;
+      margin:0;
+      padding:0;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .tt-dash-list li {
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      border-bottom:1px solid var(--tt-ring);
+      padding-bottom:8px;
+    }
+    .tt-dash-list li:last-child {
+      border-bottom:none;
+      padding-bottom:0;
+    }
+    .tt-dash-label {
+      font-weight:600;
+      font-size:13px;
+    }
+    .tt-dash-meta {
+      font-size:12px;
+      color:var(--tt-muted);
+      text-align:right;
+      white-space:nowrap;
+    }
+    .tt-dash-chart {
+      gap:16px;
+    }
+    .tt-chart-rows {
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .tt-chart-row {
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    .tt-chart-label {
+      flex:0 0 160px;
+      font-weight:600;
+      font-size:13px;
+    }
+    .tt-chart-bar {
+      flex:1;
+      height:12px;
+      border-radius:999px;
+      background:rgba(37,99,235,0.18);
+      overflow:hidden;
+      position:relative;
+    }
+    .tt-chart-fill {
+      position:absolute;
+      inset:0;
+      border-radius:inherit;
+      background:linear-gradient(90deg,var(--tt-brand-from),var(--tt-brand-to));
+      transform-origin:left center;
+    }
+    .tt-chart-value {
+      width:48px;
+      text-align:right;
+      font-size:12px;
+      color:var(--tt-muted);
+      font-variant-numeric:tabular-nums;
+    }
+    .tt-dash-table {
+      overflow:auto;
+      border:1px solid var(--tt-ring);
+      border-radius:12px;
+      background:#fff;
+      max-width:100%;
+    }
+    .tt-dash-table table {
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      min-width:420px;
+    }
+    .tt-dash-table thead th {
+      background:linear-gradient(90deg,var(--tt-brand-from),var(--tt-brand-to));
+      color:#fff;
+      font-weight:600;
+    }
+    .tt-dash-table th,
+    .tt-dash-table td {
+      padding:8px 10px;
+      border-bottom:1px solid var(--tt-ring);
+      border-right:1px solid var(--tt-ring);
+      font-size:13px;
+      text-align:center;
+    }
+    .tt-dash-table th:first-child,
+    .tt-dash-table td:first-child {
+      text-align:left;
+    }
+    .tt-dash-table tr:last-child td {
+      border-bottom:none;
+    }
+    .tt-dash-table th:last-child,
+    .tt-dash-table td:last-child {
+      border-right:none;
     }
     #tt-overviewTbl thead th.tt-emp-col,
     #tt-overviewTbl tbody th.tt-emp-col {
@@ -374,9 +620,24 @@
       .tt-import-status { text-align:left; }
     }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js" integrity="sha512-lwAQ7Ez+KQEiC5EvhczHxVn9Yx8RJWb1x1oGf4bm/FYnGV8eK3oprmDdH+AnuXmeNn45/I4XESyqCCpt5TR1fA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
-  <div id="tt-root"></div>
+  <div id="tt-root">
+    <div id="tt-loadingShell" class="tt-loading-shell" role="status" aria-live="polite">
+      <div class="tt-loading-spinner" aria-hidden="true"></div>
+      <div class="tt-loading-text">Preparing Training Tracker…</div>
+      <div class="tt-skeleton-grid" aria-hidden="true">
+        <div class="tt-skeleton-bar tt-wide tt-skeleton-shimmer"></div>
+        <div class="tt-skeleton-bar tt-medium tt-skeleton-shimmer"></div>
+        <div class="tt-skeleton-bar tt-narrow tt-skeleton-shimmer"></div>
+        <div class="tt-skeleton-chip tt-skeleton-shimmer"></div>
+        <div class="tt-skeleton-row tt-skeleton-shimmer"></div>
+        <div class="tt-skeleton-row tt-skeleton-shimmer"></div>
+        <div class="tt-skeleton-row tt-skeleton-shimmer"></div>
+      </div>
+    </div>
+  </div>
   <script>
 window.TRAINING_TRACKER_COURSES = [
   {
@@ -1413,6 +1674,112 @@ window.TRAINING_TRACKER_COURSES = [
         return Array.from(new Set(arr.filter(v=>v))).sort((a,b)=>String(a).localeCompare(String(b)));
       }
 
+      function collectCategoriesByIndex(catalog){
+        const map = new Map();
+        (catalog || []).forEach(cls=>{
+          const label = cls && cls.area ? String(cls.area) : '';
+          if(!label) return;
+          const order = Number.isFinite(cls.__categoryOrder) ? cls.__categoryOrder : Number.POSITIVE_INFINITY;
+          const current = map.get(label);
+          if(current === undefined || order < current){
+            map.set(label, order);
+          }
+        });
+        return Array.from(map.entries())
+          .sort((a,b)=>{
+            if(a[1] !== b[1]) return a[1] - b[1];
+            return a[0].localeCompare(b[0]);
+          })
+          .map(entry=>entry[0]);
+      }
+
+      function enableTableSorting(table, options={}){
+        if(!table || table.dataset.ttSortableApplied) return;
+        const thead = table.tHead;
+        const tbody = table.tBodies && table.tBodies[0];
+        if(!thead || !tbody) return;
+        table.dataset.ttSortableApplied = 'true';
+        const headers = Array.from(thead.querySelectorAll('th'));
+        const sortState = {index:-1, direction:1};
+        const {stickySelector=null, beforeSort=null} = options;
+
+        const parseSortValue = value=>{
+          const text = String(value ?? '').trim();
+          if(!text) return {text:'', num:Number.NaN};
+          const normalized = text.replace(/[%,$]/g,'').replace(/\s+/g,'');
+          const num = normalized ? Number(normalized) : Number.NaN;
+          return {text, num};
+        };
+
+        const getCellValue = (row, index)=>{
+          const cell = row.children[index];
+          if(!cell) return '';
+          if(cell.dataset && cell.dataset.sortValue !== undefined) return cell.dataset.sortValue;
+          const input = cell.querySelector('input, select, textarea');
+          if(input) return input.value || '';
+          return cell.textContent || '';
+        };
+
+        const applySortIndicators = (activeIndex, direction)=>{
+          headers.forEach((th, idx)=>{
+            th.classList.remove('tt-sort-asc', 'tt-sort-desc');
+            th.removeAttribute('aria-sort');
+            if(idx === activeIndex){
+              th.classList.add(direction === 1 ? 'tt-sort-asc' : 'tt-sort-desc');
+              th.setAttribute('aria-sort', direction === 1 ? 'ascending' : 'descending');
+            }
+          });
+        };
+
+        const runSort = index=>{
+          if(typeof beforeSort === 'function') beforeSort();
+          const rows = Array.from(tbody.querySelectorAll('tr'));
+          const sortableRows = stickySelector ? rows.filter(row=> !row.matches(stickySelector)) : rows.slice();
+          if(sortableRows.length <= 1) return;
+          const stickyRows = stickySelector ? rows.filter(row=> row.matches(stickySelector)) : [];
+          const direction = (sortState.index === index && sortState.direction === 1) ? -1 : 1;
+          sortState.index = index;
+          sortState.direction = direction;
+          applySortIndicators(index, direction);
+          const collated = sortableRows.map((row, originalIndex)=>({row, originalIndex}));
+          collated.sort((a,b)=>{
+            const aVal = getCellValue(a.row, index);
+            const bVal = getCellValue(b.row, index);
+            const aParsed = parseSortValue(aVal);
+            const bParsed = parseSortValue(bVal);
+            const aNumValid = Number.isFinite(aParsed.num);
+            const bNumValid = Number.isFinite(bParsed.num);
+            if(aNumValid && bNumValid){
+              if(aParsed.num !== bParsed.num) return (aParsed.num - bParsed.num) * direction;
+            }
+            const cmp = aParsed.text.localeCompare(bParsed.text, undefined, {numeric:true, sensitivity:'base'});
+            if(cmp !== 0) return cmp * direction;
+            return (a.originalIndex - b.originalIndex) * direction;
+          });
+          const frag = document.createDocumentFragment();
+          collated.forEach(item=> frag.appendChild(item.row));
+          tbody.appendChild(frag);
+          if(stickyRows.length){
+            const stickyFrag = document.createDocumentFragment();
+            stickyRows.forEach(row=> stickyFrag.appendChild(row));
+            tbody.appendChild(stickyFrag);
+          }
+        };
+
+        headers.forEach((th, index)=>{
+          if(th.dataset && th.dataset.sortable === 'false') return;
+          th.classList.add('tt-sortable');
+          th.tabIndex = 0;
+          th.addEventListener('click', ()=> runSort(index));
+          th.addEventListener('keydown', ev=>{
+            if(ev.key === 'Enter' || ev.key === ' '){
+              ev.preventDefault();
+              runSort(index);
+            }
+          });
+        });
+      }
+
       function normalizeLeadership(value, positions){
         const raw = String(value ?? '').trim();
         if(raw){
@@ -1502,6 +1869,87 @@ window.TRAINING_TRACKER_COURSES = [
         });
       }
 
+      // Auto-restore a snapshot embedded in this HTML (if present)
+      (function restoreEmbeddedTTSnapshot(){
+        try{
+          const script = document.getElementById('ttEmbeddedState');
+          if(!script || !script.textContent) return;
+          const raw = script.textContent.trim();
+          if(!raw) return;
+          const encoding = (script.getAttribute('data-encoding') || '').toLowerCase();
+          let snap = null;
+          let lastError = null;
+          const parseJson = text=>{
+            try{ return JSON.parse(text); }
+            catch(err){ lastError = err; return null; }
+          };
+
+          if(!snap && (encoding === 'json' || raw[0] === '{')){
+            snap = parseJson(raw);
+          }
+
+          if(!snap){
+            try{
+              const cleaned = raw.replace(/\s+/g, '');
+              let binary;
+              if(typeof atob === 'function'){
+                binary = atob(cleaned);
+              }else if(typeof window !== 'undefined' && typeof window.atob === 'function'){
+                binary = window.atob(cleaned);
+              }else if(typeof Buffer !== 'undefined'){
+                binary = Buffer.from(cleaned, 'base64').toString('binary');
+              }else{
+                throw new Error('base64 decoder unavailable');
+              }
+              const bytes = new Uint8Array(binary.length);
+              for(let i=0;i<binary.length;i+=1){
+                bytes[i] = binary.charCodeAt(i);
+              }
+              const pakoLib = (typeof window !== 'undefined' && window.pako && (typeof window.pako.ungzip === 'function' || typeof window.pako.inflate === 'function'))
+                ? window.pako
+                : (typeof pako !== 'undefined' ? pako : null);
+              if(!pakoLib){
+                throw new Error('pako unavailable for snapshot inflate');
+              }
+              const inflateFn = typeof pakoLib.ungzip === 'function' ? pakoLib.ungzip : pakoLib.inflate;
+              const json = inflateFn(bytes, {to:'string'});
+              snap = parseJson(json);
+            }catch(err){
+              lastError = err;
+            }
+          }
+
+          if(!snap){
+            if(lastError) console.warn('TrainingTracker: failed to parse embedded snapshot', lastError);
+            return;
+          }
+
+          const payload = {
+            completion: snap.completion || {},
+            completionMeta: snap.completionMeta || {},
+            classes: Array.isArray(snap.classes) ? snap.classes : [],
+            employees: Array.isArray(snap.employees) ? snap.employees : []
+          };
+          if(typeof window !== 'undefined'){
+            window.__ttEmbeddedSnapshot = payload;
+          }
+          // Persist to both stores; loadData() will merge these on boot.
+          if(typeof localStorage !== 'undefined'){
+            try{
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+            }catch(err){
+              console.warn('TrainingTracker: failed to seed localStorage from embedded snapshot', err);
+            }
+          }
+          // Best-effort IndexedDB write (non-blocking)
+          if (typeof idbWriteState === 'function'){
+            idbWriteState(payload).catch(()=>{});
+          }
+        }catch(err){
+          console.warn('TrainingTracker: failed to restore embedded snapshot', err);
+        }
+      })();
+
       function scheduleIdle(callback){
         if(typeof requestIdleCallback === 'function'){
           const id = requestIdleCallback(callback);
@@ -1537,6 +1985,18 @@ window.TRAINING_TRACKER_COURSES = [
         select.id = id;
         wrapper.appendChild(select);
         return {wrapper, select};
+      }
+
+      function buildTextInput(labelText, id, placeholder=''){
+        const wrapper = document.createElement('label');
+        wrapper.setAttribute('for', id);
+        wrapper.textContent = labelText+':';
+        const input = document.createElement('input');
+        input.type = 'search';
+        input.id = id;
+        if(placeholder) input.placeholder = placeholder;
+        wrapper.appendChild(input);
+        return {wrapper, input};
       }
 
       function buildCheckbox(labelText, id){
@@ -1593,6 +2053,13 @@ window.TRAINING_TRACKER_COURSES = [
         resetBtn.className = 'tt-import-btn';
         resetBtn.textContent = 'Clear Saved Data';
         importWrap.appendChild(resetBtn);
+        // Save Snapshot button (exports a self-contained HTML)
+        const saveBtn = document.createElement('button');
+        saveBtn.type = 'button';
+        saveBtn.id = 'tt-saveBtn';
+        saveBtn.className = 'tt-import-btn';
+        saveBtn.textContent = 'Save Snapshot';
+        importWrap.appendChild(saveBtn);
 
         headerPanel.append(headerInfo, importWrap);
 
@@ -1601,6 +2068,11 @@ window.TRAINING_TRACKER_COURSES = [
         subnav.id = 'tt-subnav';
         const pilltabs = document.createElement('div');
         pilltabs.className = 'tt-pilltabs';
+        const tabDashboard = document.createElement('button');
+        tabDashboard.id = 'tt-tab-dashboard';
+        tabDashboard.className = 'tt-pilltab';
+        tabDashboard.type = 'button';
+        tabDashboard.textContent = 'Dashboard';
         const tabOverview = document.createElement('button');
         tabOverview.id = 'tt-tab-overview';
         tabOverview.className = 'tt-pilltab';
@@ -1616,7 +2088,7 @@ window.TRAINING_TRACKER_COURSES = [
         tabCatalog.className = 'tt-pilltab';
         tabCatalog.type = 'button';
         tabCatalog.textContent = 'All Classes';
-        pilltabs.append(tabOverview, tabEmployee, tabCatalog);
+        pilltabs.append(tabDashboard, tabOverview, tabEmployee, tabCatalog);
         // Additional tabs for Employee List and Job Titles
         const tabEmpList = document.createElement('button');
         tabEmpList.id = 'tt-tab-emplist';
@@ -1631,6 +2103,37 @@ window.TRAINING_TRACKER_COURSES = [
         pilltabs.append(tabEmpList, tabJobList);
         subnav.appendChild(pilltabs);
 
+        const dashboard = document.createElement('section');
+        dashboard.id = 'tt-screen-dashboard';
+        dashboard.className = 'tt-panel tt-hidden';
+        const dashboardHeading = document.createElement('h2');
+        dashboardHeading.textContent = 'Dashboard';
+        const dashboardIntro = document.createElement('p');
+        dashboardIntro.className = 'tt-muted';
+        dashboardIntro.textContent = 'Track overall training momentum at a glance.';
+        const dashboardFilters = document.createElement('div');
+        dashboardFilters.className = 'tt-row tt-dash-filters';
+        const dashSearch = buildTextInput('Search Classes', 'tt-dashboardSearch', 'Filter by name…');
+        const dashClass = buildSelect('Class', 'tt-dashboardClass');
+        const dashCat = buildSelect('Category', 'tt-dashboardCat');
+        const dashGroup = buildSelect('Group', 'tt-dashboardGroup');
+        const dashLevel = buildSelect('Level', 'tt-dashboardLevel');
+        const dashStep = buildSelect('Step', 'tt-dashboardStep');
+        const dashSite = buildSelect('Site', 'tt-dashboardSite');
+        dashboardFilters.append(
+          dashSearch.wrapper,
+          dashClass.wrapper,
+          dashCat.wrapper,
+          dashGroup.wrapper,
+          dashLevel.wrapper,
+          dashStep.wrapper,
+          dashSite.wrapper
+        );
+        const dashboardBody = document.createElement('div');
+        dashboardBody.id = 'tt-dashboardBody';
+        dashboardBody.className = 'tt-dashboard';
+        dashboard.append(dashboardHeading, dashboardIntro, dashboardFilters, dashboardBody);
+
         const overview = document.createElement('section');
         overview.id = 'tt-screen-overview';
         overview.className = 'tt-panel';
@@ -1638,6 +2141,7 @@ window.TRAINING_TRACKER_COURSES = [
         overviewHeading.textContent = 'Manager Overview';
         const overviewFilters = document.createElement('div');
         overviewFilters.className = 'tt-row';
+        const overviewSearch = buildTextInput('Search Classes', 'tt-overviewSearch', 'Filter by name…');
         const classFilter = buildSelect('Class', 'tt-classFilter');
         const catFilter = buildSelect('Category', 'tt-catFilter');
         const groupFilter = buildSelect('Group', 'tt-groupFilter');
@@ -1649,7 +2153,7 @@ window.TRAINING_TRACKER_COURSES = [
         overviewHint.className = 'tt-muted';
         overviewHint.textContent = 'Click a row to open that employee.';
         // Append all filters including the new site filter, followed by the hint
-        overviewFilters.append(classFilter.wrapper, catFilter.wrapper, groupFilter.wrapper, levelFilter.wrapper, stepFilter.wrapper, siteFilter.wrapper, overviewHint);
+        overviewFilters.append(overviewSearch.wrapper, classFilter.wrapper, catFilter.wrapper, groupFilter.wrapper, levelFilter.wrapper, stepFilter.wrapper, siteFilter.wrapper, overviewHint);
         const grid = document.createElement('div');
         grid.className = 'tt-grid';
         const overviewTable = document.createElement('table');
@@ -1723,6 +2227,7 @@ window.TRAINING_TRACKER_COURSES = [
         const catalogBody = document.createElement('tbody');
         catalogBody.id = 'tt-catalogBody';
         catalogTable.append(catalogHead, catalogBody);
+        enableTableSorting(catalogTable, {stickySelector:'tr[data-new-row]'});
         catalogGrid.appendChild(catalogTable);
         catalog.append(catalogHeading, catalogFilters, catalogGrid);
 
@@ -1740,6 +2245,7 @@ window.TRAINING_TRACKER_COURSES = [
         const empListBody = document.createElement('tbody');
         empListBody.id = 'tt-empListBody';
         empListTable.append(empListHead, empListBody);
+        enableTableSorting(empListTable);
         empListGrid.appendChild(empListTable);
         empList.append(empListHeading, empListGrid);
 
@@ -1757,11 +2263,12 @@ window.TRAINING_TRACKER_COURSES = [
         const jobListBody = document.createElement('tbody');
         jobListBody.id = 'tt-jobListBody';
         jobListTable.append(jobListHead, jobListBody);
+        enableTableSorting(jobListTable);
         jobListGrid.appendChild(jobListTable);
         jobList.append(jobListHeading, jobListGrid);
 
         // Append new panels to the app
-        app.append(headerPanel, subnav, overview, employee, catalog, empList, jobList);
+        app.append(headerPanel, subnav, dashboard, overview, employee, catalog, empList, jobList);
 
         return {
           app,
@@ -1772,10 +2279,24 @@ window.TRAINING_TRACKER_COURSES = [
           importInput,
           importStatus,
           resetButton: resetBtn,
+          saveButton: saveBtn,
+          tabDashboard,
           tabOverview,
           tabEmployee,
           tabCatalog,
+          dashboardSection: dashboard,
+          dashboardBody,
+          dashboardFilters: {
+            search: dashSearch.input,
+            classId: dashClass.select,
+            category: dashCat.select,
+            group: dashGroup.select,
+            level: dashLevel.select,
+            step: dashStep.select,
+            site: dashSite.select
+          },
           overviewSection: overview,
+          overviewSearch: overviewSearch.input,
           overviewTable,
           overviewHead,
           overviewBody,
@@ -1826,6 +2347,11 @@ window.TRAINING_TRACKER_COURSES = [
 
       function createInstance(rootElement, options={}){
         if(!rootElement) throw new Error('TrainingTracker.mount requires a root element');
+        const loadingShell = rootElement.querySelector('#tt-loadingShell');
+        if(loadingShell){
+          loadingShell.classList.add('tt-hidden');
+          loadingShell.setAttribute('aria-hidden','true');
+        }
         const elements = createStructure();
         rootElement.appendChild(elements.app);
 
@@ -1843,12 +2369,103 @@ window.TRAINING_TRACKER_COURSES = [
           completionMeta: {},
           completionCounts: {}
         };
+        const filterState = {
+          search: '',
+          classId: '',
+          category: '',
+          group: '',
+          level: '',
+          step: '',
+          site: ''
+        };
         let customClassCounter = 0;
         let activeTab = 'overview';
+        let tabNeedsRender = {
+          dashboard: true,
+          overview: true,
+          employee: true,
+          catalog: true,
+          emplist: true,
+          joblist: true
+        };
+        const tabBuilders = {
+          dashboard: buildDashboard,
+          overview: buildOverview,
+          employee: renderDetail,
+          catalog: buildCatalog,
+          emplist: buildEmpList,
+          joblist: buildJobList
+        };
         let overviewChunkCancel = null;
         const onChange = typeof options.onChange === 'function' ? options.onChange : null;
 
         const usePersistence = !options || (Object.keys(options).length === 0);
+
+        function renderTab(which){
+          const builder = tabBuilders[which];
+          if(!builder) return;
+          if(tabNeedsRender[which]){
+            builder();
+            tabNeedsRender[which] = false;
+          }
+        }
+
+        function requestRender(which){
+          if(!(which in tabNeedsRender)) return;
+          tabNeedsRender[which] = true;
+          if(activeTab === which){
+            renderTab(which);
+          }
+        }
+
+        function syncFilterControls(){
+          if(elements.overviewSearch && elements.overviewSearch.value !== filterState.search){
+            elements.overviewSearch.value = filterState.search;
+          }
+          if(elements.dashboardFilters && elements.dashboardFilters.search && elements.dashboardFilters.search.value !== filterState.search){
+            elements.dashboardFilters.search.value = filterState.search;
+          }
+
+          const syncSelect = (select, key)=>{
+            if(!select) return;
+            const desired = filterState[key] || '';
+            if(desired){
+              const hasOption = Array.from(select.options || []).some(opt=>opt.value === desired);
+              if(hasOption){
+                if(select.value !== desired) select.value = desired;
+              }else{
+                if(select.value !== '') select.value = '';
+                if(filterState[key] !== '') filterState[key] = '';
+              }
+            }else if(select.value !== ''){
+              select.value = '';
+            }
+          };
+
+          syncSelect(elements.classFilter, 'classId');
+          syncSelect(elements.catFilter, 'category');
+          syncSelect(elements.groupFilter, 'group');
+          syncSelect(elements.levelFilter, 'level');
+          syncSelect(elements.stepFilter, 'step');
+          syncSelect(elements.siteFilter, 'site');
+
+          if(elements.dashboardFilters){
+            syncSelect(elements.dashboardFilters.classId, 'classId');
+            syncSelect(elements.dashboardFilters.category, 'category');
+            syncSelect(elements.dashboardFilters.group, 'group');
+            syncSelect(elements.dashboardFilters.level, 'level');
+            syncSelect(elements.dashboardFilters.step, 'step');
+            syncSelect(elements.dashboardFilters.site, 'site');
+          }
+        }
+
+        function updateFilterState(key, value){
+          const normalized = value == null ? '' : String(value);
+          if(filterState[key] === normalized) return false;
+          filterState[key] = normalized;
+          syncFilterControls();
+          return true;
+        }
 
         function bumpCompletionCount(empId, delta){
           if(!delta) return;
@@ -1880,10 +2497,11 @@ window.TRAINING_TRACKER_COURSES = [
         }
 
         async function loadData(){
-          state.employees = clone(options.employees || defaultEmployees);
-          state.classes = prepareClassList(clone(options.classes || defaultClasses));
-          state.completion = clone(options.completions || {});
-          state.completionMeta = clone(options.completionMeta || {});
+          const embedded = (typeof window !== 'undefined' && window.__ttEmbeddedSnapshot) || null;
+          state.employees = clone(options.employees || embedded?.employees || defaultEmployees);
+          state.classes = prepareClassList(clone(options.classes || embedded?.classes || defaultClasses));
+          state.completion = clone(options.completions || embedded?.completion || {});
+          state.completionMeta = clone(options.completionMeta || embedded?.completionMeta || {});
 
           if(usePersistence){
             let restoredPersisted = false;
@@ -1995,16 +2613,37 @@ window.TRAINING_TRACKER_COURSES = [
                 console.warn('TrainingTracker: migration to indexedDB failed', err);
               });
             }
-          }else{
+          }
+          if(!usePersistence){
             persistenceMode = null;
           }
 
-          state.catalog = enrichCatalog(state.classes);
-          customClassCounter = state.classes.length;
-          if(!Array.isArray(state.employees)) state.employees = [];
-          if(!state.completion || typeof state.completion !== 'object') state.completion = {};
-          if(!state.completionMeta || typeof state.completionMeta !== 'object') state.completionMeta = {};
-          recomputeCompletionCounts();
+          if(embedded){
+            if(!Array.isArray(state.employees) || state.employees.length === 0){
+              state.employees = clone(embedded.employees || []);
+            }
+            if(!Array.isArray(state.classes) || state.classes.length === 0){
+              state.classes = prepareClassList(clone(embedded.classes || []));
+            }
+            if(!state.completion || typeof state.completion !== 'object' || Object.keys(state.completion).length === 0){
+              state.completion = clone(embedded.completion || {});
+            }
+            if(!state.completionMeta || typeof state.completionMeta !== 'object' || Object.keys(state.completionMeta).length === 0){
+              state.completionMeta = clone(embedded.completionMeta || {});
+            }
+          }
+
+        state.catalog = enrichCatalog(state.classes);
+        customClassCounter = state.classes.length;
+        if(!Array.isArray(state.employees)) state.employees = [];
+        if(!state.completion || typeof state.completion !== 'object') state.completion = {};
+        if(!state.completionMeta || typeof state.completionMeta !== 'object') state.completionMeta = {};
+        recomputeCompletionCounts();
+        if(embedded && typeof window !== 'undefined'){
+          try{ delete window.__ttEmbeddedSnapshot; }
+          catch(_err){}
+        }
+
         }
 
         function saveState(){
@@ -2037,6 +2676,132 @@ window.TRAINING_TRACKER_COURSES = [
           }
         }
 
+        async function exportEmbeddedSnapshot(){
+          const escapeJsonForHtml = value => value
+            .replace(/</g, '\\u003C')
+            .replace(/\u2028/g, '\\u2028')
+            .replace(/\u2029/g, '\\u2029');
+          const toBase64 = bytes => {
+            if(typeof btoa === 'function'){
+              let binary = '';
+              const chunk = 0x8000;
+              for(let i=0;i<bytes.length;i+=chunk){
+                const segment = bytes.subarray(i, i+chunk);
+                binary += String.fromCharCode.apply(null, segment);
+              }
+              return btoa(binary);
+            }
+            if(typeof window !== 'undefined' && typeof window.btoa === 'function'){
+              let binary = '';
+              const chunk = 0x8000;
+              for(let i=0;i<bytes.length;i+=chunk){
+                const segment = bytes.subarray(i, i+chunk);
+                binary += String.fromCharCode.apply(null, segment);
+              }
+              return window.btoa(binary);
+            }
+            if(typeof Buffer !== 'undefined'){
+              return Buffer.from(bytes).toString('base64');
+            }
+            throw new Error('base64 encoder unavailable');
+          };
+          try{
+            // Snapshot mirrors what saveState() persists
+            const snapshot = {
+              completion: clone(state.completion),
+              completionMeta: clone(state.completionMeta),
+              classes: clone(state.classes),
+              employees: clone(state.employees)
+            };
+            // Clone full document and inject <script id="ttEmbeddedState">
+            const docClone = document.documentElement.cloneNode(true);
+            const rootClone = docClone.querySelector('#tt-root');
+            if(rootClone){
+              const appClone = rootClone.querySelector('.tt-app');
+              if(appClone && appClone.parentNode){
+                appClone.parentNode.removeChild(appClone);
+              }
+              const loadingClone = rootClone.querySelector('#tt-loadingShell');
+              if(loadingClone){
+                loadingClone.classList.remove('tt-hidden');
+                loadingClone.removeAttribute('aria-hidden');
+              }
+            }
+            const statusClone = docClone.querySelector('#tt-importStatus');
+            if(statusClone){
+              statusClone.textContent = '';
+              statusClone.classList.remove('tt-import-error');
+              statusClone.removeAttribute('title');
+            }
+            const old = docClone.querySelector('#ttEmbeddedState');
+            if(old && old.parentNode) old.parentNode.removeChild(old);
+            const snapEl = docClone.ownerDocument.createElement('script');
+            snapEl.id = 'ttEmbeddedState';
+            let payloadText = '';
+            let encoding = 'json';
+            let scriptType = 'application/json';
+            const json = JSON.stringify(snapshot);
+            const pakoLib = (typeof window !== 'undefined' && window.pako && typeof window.pako.gzip === 'function')
+              ? window.pako
+              : (typeof pako !== 'undefined' && typeof pako.gzip === 'function' ? pako : null);
+            if(pakoLib){
+              try{
+                const compressed = pakoLib.gzip(json);
+                payloadText = toBase64(compressed);
+                encoding = 'gzip-base64';
+                scriptType = 'application/octet-stream';
+              }catch(_err){
+                payloadText = escapeJsonForHtml(json);
+              }
+            }else{
+              payloadText = escapeJsonForHtml(json);
+            }
+            snapEl.type = scriptType;
+            snapEl.setAttribute('data-encoding', encoding);
+            snapEl.textContent = payloadText;
+            (docClone.querySelector('head') || docClone).appendChild(snapEl);
+
+            const htmlString = '<!DOCTYPE html>' + docClone.outerHTML;
+            const dateStr = new Date().toISOString().split('T')[0];
+            const filename = `training_tracker_${dateStr}_data.html`;
+
+            let saved = false;
+            try{
+              if(window.showSaveFilePicker){
+                const handle = await window.showSaveFilePicker({
+                  suggestedName: filename,
+                  types: [{ description: 'HTML file', accept: { 'text/html': ['.html', '.htm'] } }]
+                });
+                const writable = await handle.createWritable();
+                await writable.write(htmlString);
+                await writable.close();
+                saved = true;
+              }
+            }catch(_e){ /* fall through to anchor */ }
+
+            if(!saved){
+              const blob = new Blob([htmlString], { type: 'text/html' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = filename;
+              document.body.appendChild(a);
+              a.click();
+              setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
+            }
+            if(elements.importStatus){
+              elements.importStatus.textContent = 'Snapshot saved';
+              elements.importStatus.classList.remove('tt-import-error');
+            }
+          }catch(err){
+            if(elements.importStatus){
+              elements.importStatus.textContent = 'Snapshot save failed';
+              elements.importStatus.classList.add('tt-import-error');
+              elements.importStatus.title = String(err && err.message || err || '');
+            }
+          }
+        }
+
         function setCompletion(empId, classId, value){
           const changed = applyCompletionRecord(state.completion, state.completionMeta, empId, classId, !!value);
           if(!changed) return false;
@@ -2051,7 +2816,11 @@ window.TRAINING_TRACKER_COURSES = [
         function toggleCompletion(empId, classId){
           const current = !!(state.completion[empId]?.[classId]);
           const changed = setCompletion(empId, classId, !current);
-          if(changed) buildOverview();
+          if(changed){
+            requestRender('overview');
+            requestRender('employee');
+            requestRender('dashboard');
+          }
         }
 
         function getCompletionMeta(empId, classId){
@@ -2465,8 +3234,9 @@ window.TRAINING_TRACKER_COURSES = [
               refreshAfterClassChange(true);
             }else{
               saveState();
-              if(activeTab === 'overview') buildOverview();
-              if(activeTab === 'employee') renderDetail();
+              requestRender('overview');
+              requestRender('employee');
+              requestRender('dashboard');
             }
 
             if(summary.employeesAdded > 0){
@@ -2477,9 +3247,10 @@ window.TRAINING_TRACKER_COURSES = [
               }
             }
 
-            if(activeTab === 'employee'){
-              renderDetail();
-            }
+            requestRender('emplist');
+            requestRender('joblist');
+
+            requestRender('employee');
 
             if(changedRecords.size && onChange){
               changedRecords.forEach(record=>{
@@ -2545,12 +3316,13 @@ window.TRAINING_TRACKER_COURSES = [
               showImportSummary(summary);
               // After a successful import, rebuild facet options (to update site list) and refresh views
               buildFacetOptions();
-              // Rebuild the overview to reflect new employees/classes
-              if(activeTab === 'overview'){
-                buildOverview();
-              }
               // Rebuild employee picker for detail view and other lists
               buildEmpPicker();
+              requestRender('overview');
+              requestRender('employee');
+              requestRender('catalog');
+              requestRender('emplist');
+              requestRender('joblist');
             }catch(err){
               showImportSummary({error: err?.message || 'Import failed.'});
             }
@@ -2611,9 +3383,10 @@ window.TRAINING_TRACKER_COURSES = [
           state.catalog = enrichCatalog(state.classes);
           buildFacetOptions();
           saveState();
-          if(activeTab === 'overview') buildOverview();
-          if(activeTab === 'employee') renderDetail();
-          if(rebuildCatalog) buildCatalog();
+          requestRender('overview');
+          requestRender('employee');
+          requestRender('dashboard');
+          if(rebuildCatalog) requestRender('catalog');
         }
 
         function finalizeCatalogRow(row){
@@ -2632,7 +3405,7 @@ window.TRAINING_TRACKER_COURSES = [
             const updated = state.catalog[newIndex];
             const filterState = getCatalogFilterState();
             if(!passesCatalogFilters(updated, filterState)){
-              buildCatalog();
+              requestRender('catalog');
               return;
             }
             delete row.dataset.newRow;
@@ -2814,13 +3587,6 @@ window.TRAINING_TRACKER_COURSES = [
 
         function buildFacetOptions(){
           const prev = {
-            classId: elements.classFilter.value,
-            overviewCat: elements.catFilter.value,
-            overviewGroup: elements.groupFilter.value,
-            overviewLevel: elements.levelFilter.value,
-            overviewStep: elements.stepFilter.value,
-            // Preserve previous site filter selection for overview
-            overviewSite: elements.siteFilter ? elements.siteFilter.value : '',
             empCat: elements.empFilters.empCat.value,
             empGroup: elements.empFilters.empGroup.value,
             empLevel: elements.empFilters.empLevel.value,
@@ -2831,41 +3597,76 @@ window.TRAINING_TRACKER_COURSES = [
             catalogStep: elements.catalogFilters.step.value
           };
 
-          const cats = uniqueSorted(state.catalog.map(c=>c.area||''));
+          const dashFilters = elements.dashboardFilters || {};
+          const cats = collectCategoriesByIndex(state.catalog);
           const groups = uniqueSorted(state.catalog.map(c=>c.group||''));
           const levels = uniqueSorted(state.catalog.map(c=>c.level||''));
           const steps = uniqueSorted(state.catalog.map(c=>c.step||''));
-          // Gather unique site codes from employees (organization code)
           const sites = uniqueSorted((state.employees || []).map(e=>e && e.organizationCode ? String(e.organizationCode) : '').filter(x=>x));
 
-          clearSelect(elements.classFilter);
-          const allOption = document.createElement('option');
-          allOption.value = '';
-          allOption.textContent = 'All';
-          elements.classFilter.appendChild(allOption);
-          state.catalog.forEach(cls=>{
-            const opt = document.createElement('option');
-            opt.value = cls.id;
-            opt.textContent = cls.short;
-            opt.title = cls.name;
-            elements.classFilter.appendChild(opt);
-          });
-          restoreSelectValue(elements.classFilter, prev.classId);
+          const populateClassSelect = (select)=>{
+            if(!select) return;
+            clearSelect(select);
+            const optAll = document.createElement('option');
+            optAll.value = '';
+            optAll.textContent = 'All';
+            select.appendChild(optAll);
+            state.catalog.forEach(cls=>{
+              const opt = document.createElement('option');
+              opt.value = cls.id;
+              opt.textContent = cls.short;
+              opt.title = cls.name;
+              select.appendChild(opt);
+            });
+          };
+
+          populateClassSelect(elements.classFilter);
+          populateClassSelect(dashFilters.classId);
+          restoreSelectValue(elements.classFilter, filterState.classId);
+          if(dashFilters.classId) restoreSelectValue(dashFilters.classId, filterState.classId);
+
+          const syncFilterFromSelect = (primary, fallback, key)=>{
+            if(primary){
+              filterState[key] = primary.value || '';
+            }else if(fallback){
+              filterState[key] = fallback.value || '';
+            }else{
+              filterState[key] = '';
+            }
+          };
 
           setSelectOptions(elements.catFilter, cats, true);
-          restoreSelectValue(elements.catFilter, prev.overviewCat);
-          setSelectOptions(elements.groupFilter, groups, true);
-          restoreSelectValue(elements.groupFilter, prev.overviewGroup);
-          setSelectOptions(elements.levelFilter, levels, true);
-          restoreSelectValue(elements.levelFilter, prev.overviewLevel);
-          setSelectOptions(elements.stepFilter, steps, true);
-          restoreSelectValue(elements.stepFilter, prev.overviewStep);
+          if(dashFilters.category) setSelectOptions(dashFilters.category, cats, true);
+          restoreSelectValue(elements.catFilter, filterState.category);
+          if(dashFilters.category) restoreSelectValue(dashFilters.category, filterState.category);
+          syncFilterFromSelect(elements.catFilter, dashFilters.category, 'category');
 
-          // Populate site filter options and restore previous selection
-          if(elements.siteFilter){
-            setSelectOptions(elements.siteFilter, sites, true);
-            restoreSelectValue(elements.siteFilter, prev.overviewSite);
-          }
+          setSelectOptions(elements.groupFilter, groups, true);
+          if(dashFilters.group) setSelectOptions(dashFilters.group, groups, true);
+          restoreSelectValue(elements.groupFilter, filterState.group);
+          if(dashFilters.group) restoreSelectValue(dashFilters.group, filterState.group);
+          syncFilterFromSelect(elements.groupFilter, dashFilters.group, 'group');
+
+          setSelectOptions(elements.levelFilter, levels, true);
+          if(dashFilters.level) setSelectOptions(dashFilters.level, levels, true);
+          restoreSelectValue(elements.levelFilter, filterState.level);
+          if(dashFilters.level) restoreSelectValue(dashFilters.level, filterState.level);
+          syncFilterFromSelect(elements.levelFilter, dashFilters.level, 'level');
+
+          setSelectOptions(elements.stepFilter, steps, true);
+          if(dashFilters.step) setSelectOptions(dashFilters.step, steps, true);
+          restoreSelectValue(elements.stepFilter, filterState.step);
+          if(dashFilters.step) restoreSelectValue(dashFilters.step, filterState.step);
+          syncFilterFromSelect(elements.stepFilter, dashFilters.step, 'step');
+
+          if(elements.siteFilter) setSelectOptions(elements.siteFilter, sites, true);
+          if(dashFilters.site) setSelectOptions(dashFilters.site, sites, true);
+          if(elements.siteFilter) restoreSelectValue(elements.siteFilter, filterState.site);
+          if(dashFilters.site) restoreSelectValue(dashFilters.site, filterState.site);
+          syncFilterFromSelect(elements.siteFilter, dashFilters.site, 'site');
+
+          syncFilterFromSelect(elements.classFilter, dashFilters.classId, 'classId');
+          syncFilterControls();
 
           const empFilters = elements.empFilters;
           setSelectOptions(empFilters.empCat, cats, true);
@@ -2906,12 +3707,348 @@ window.TRAINING_TRACKER_COURSES = [
           return span;
         }
 
-        function computeProgress(empId){
-          const total = state.catalog.length;
+        function computeProgress(empId, classes=null){
+          const classList = Array.isArray(classes) ? classes : state.catalog;
+          const total = classList.length;
           if(total === 0) return 0;
-          const completed = state.completionCounts[empId] || 0;
+          let completed = 0;
+          if(Array.isArray(classes)){
+            const bucket = state.completion[empId] || {};
+            classList.forEach(cls=>{
+              if(bucket && bucket[cls.id]) completed += 1;
+            });
+          }else{
+            completed = state.completionCounts[empId] || 0;
+          }
           const pct = Math.round((completed/total)*100);
           return Math.max(0, Math.min(100, pct));
+        }
+
+        function buildDashboard(){
+          const host = elements.dashboardBody;
+          if(!host) return;
+          host.textContent = '';
+
+          const searchTerm = (filterState.search || '').trim().toLowerCase();
+          const cat = filterState.category;
+          const group = filterState.group;
+          const level = filterState.level;
+          const step = filterState.step;
+          const selectedClassId = filterState.classId;
+          const siteFilter = filterState.site;
+
+          const matchesSearch = (cls)=>{
+            if(!searchTerm) return true;
+            const haystacks = [cls.short, cls.name];
+            return haystacks.some(value=> String(value||'').toLowerCase().includes(searchTerm));
+          };
+
+          const catalog = Array.isArray(state.catalog) ? state.catalog : [];
+          let filteredClasses = catalog.filter(c=>
+            (!cat || c.area === cat) &&
+            (!group || c.group === group) &&
+            (!level || c.level === level) &&
+            (!step || String(c.step) === String(step)) &&
+            matchesSearch(c)
+          );
+
+          if(selectedClassId){
+            const cls = catalog.find(c=>c.id === selectedClassId);
+            if(!cls || (searchTerm && !matchesSearch(cls))){
+              const empty = document.createElement('p');
+              empty.className = 'tt-muted';
+              empty.textContent = 'No classes match the current filters.';
+              host.appendChild(empty);
+              return;
+            }
+            filteredClasses = [cls];
+          }else if(filteredClasses.length === 0){
+            const empty = document.createElement('p');
+            empty.className = 'tt-muted';
+            empty.textContent = 'No classes match the current filters.';
+            host.appendChild(empty);
+            return;
+          }
+
+          const employees = Array.isArray(state.employees) ? state.employees : [];
+          const filteredEmployees = employees.filter(emp=>{
+            if(!siteFilter) return true;
+            const org = emp && emp.organizationCode ? String(emp.organizationCode) : '';
+            return org === siteFilter;
+          });
+          const totalEmployees = filteredEmployees.length;
+          const totalClasses = filteredClasses.length;
+
+          const completionCountsByClass = new Map();
+          const categoryTotals = new Map();
+          const siteCategoryTotals = new Map();
+          let completionRecords = 0;
+
+          filteredEmployees.forEach(emp=>{
+            const bucket = state.completion[emp.id] || {};
+            const siteKey = emp && emp.organizationCode ? String(emp.organizationCode) : 'Unassigned';
+            let siteMap = siteCategoryTotals.get(siteKey);
+            if(!siteMap){
+              siteMap = new Map();
+              siteCategoryTotals.set(siteKey, siteMap);
+            }
+            filteredClasses.forEach(cls=>{
+              const completed = !!(bucket && bucket[cls.id]);
+              if(completed){
+                completionRecords += 1;
+                completionCountsByClass.set(cls.id, (completionCountsByClass.get(cls.id) || 0) + 1);
+              }
+              const categoryLabel = cls.area || 'Uncategorized';
+              const catEntry = categoryTotals.get(categoryLabel) || {completed:0,total:0};
+              catEntry.total += 1;
+              if(completed) catEntry.completed += 1;
+              categoryTotals.set(categoryLabel, catEntry);
+              let siteEntry = siteMap.get(categoryLabel);
+              if(!siteEntry){
+                siteEntry = {completed:0,total:0};
+                siteMap.set(categoryLabel, siteEntry);
+              }
+              siteEntry.total += 1;
+              if(completed) siteEntry.completed += 1;
+            });
+          });
+
+          const totalOpportunities = totalEmployees * totalClasses;
+          const sumProgress = filteredEmployees.reduce((total, emp)=> total + computeProgress(emp.id, filteredClasses), 0);
+          const averageProgress = totalEmployees ? Math.round(sumProgress / totalEmployees) : 0;
+          const overallCompletion = totalOpportunities ? Math.round((completionRecords / totalOpportunities) * 100) : 0;
+          const formatNumber = value=> typeof value === 'number' ? value.toLocaleString() : value;
+
+          const cardsWrap = document.createElement('div');
+          cardsWrap.className = 'tt-dash-cards';
+          const cards = [
+            {label: 'Employees tracked', value: formatNumber(totalEmployees)},
+            {label: 'Classes available', value: formatNumber(totalClasses)},
+            {label: 'Completion records', value: formatNumber(completionRecords)},
+            {label: 'Average employee progress', value: (totalEmployees && totalClasses) ? `${averageProgress}%` : '—'},
+            {label: 'Overall completion rate', value: totalOpportunities ? `${overallCompletion}%` : '—'}
+          ];
+          cards.forEach(card=>{
+            const div = document.createElement('div');
+            div.className = 'tt-dash-card';
+            const strong = document.createElement('strong');
+            strong.textContent = card.value;
+            const span = document.createElement('span');
+            span.textContent = card.label;
+            div.append(strong, span);
+            cardsWrap.appendChild(div);
+          });
+          host.appendChild(cardsWrap);
+
+          if(totalClasses === 0){
+            const empty = document.createElement('p');
+            empty.className = 'tt-muted';
+            empty.textContent = 'No classes match the current filters.';
+            host.appendChild(empty);
+            return;
+          }
+          if(totalEmployees === 0){
+            const empty = document.createElement('p');
+            empty.className = 'tt-muted';
+            empty.textContent = siteFilter ? 'No employees match the selected site.' : 'Add employees to unlock detailed insights.';
+            host.appendChild(empty);
+            return;
+          }
+
+          const categoryList = Array.from(categoryTotals.entries()).map(([category, stats])=>{
+            const pct = stats.total ? Math.round((stats.completed / stats.total) * 100) : 0;
+            return {category, pct, stats};
+          });
+          const chartCategories = [...categoryList].sort((a,b)=>{
+            if(b.pct !== a.pct) return b.pct - a.pct;
+            return a.category.localeCompare(b.category);
+          });
+          if(chartCategories.length){
+            const chartSection = document.createElement('section');
+            chartSection.className = 'tt-dash-section tt-dash-chart';
+            const heading = document.createElement('h3');
+            heading.textContent = 'Category completion';
+            chartSection.appendChild(heading);
+            const rows = document.createElement('div');
+            rows.className = 'tt-chart-rows';
+            chartCategories.forEach(item=>{
+              const row = document.createElement('div');
+              row.className = 'tt-chart-row';
+              const label = document.createElement('span');
+              label.className = 'tt-chart-label';
+              label.textContent = item.category;
+              const bar = document.createElement('div');
+              bar.className = 'tt-chart-bar';
+              const fill = document.createElement('div');
+              fill.className = 'tt-chart-fill';
+              const ratio = Math.max(0, Math.min(100, item.pct)) / 100;
+              fill.style.transform = `scaleX(${ratio})`;
+              bar.appendChild(fill);
+              const value = document.createElement('span');
+              value.className = 'tt-chart-value';
+              value.textContent = item.stats.total ? `${item.pct}%` : '—';
+              row.append(label, bar, value);
+              rows.appendChild(row);
+            });
+            chartSection.appendChild(rows);
+            host.appendChild(chartSection);
+          }
+
+          const categoryOrder = [...categoryList].sort((a,b)=> a.category.localeCompare(b.category)).map(item=>item.category);
+          const siteEntries = Array.from(siteCategoryTotals.entries()).sort((a,b)=> a[0].localeCompare(b[0]));
+          if(siteEntries.length && categoryOrder.length){
+            const tableSection = document.createElement('section');
+            tableSection.className = 'tt-dash-section';
+            const tableHeading = document.createElement('h3');
+            tableHeading.textContent = 'Category completion by site';
+            tableSection.appendChild(tableHeading);
+            const tableWrap = document.createElement('div');
+            tableWrap.className = 'tt-dash-table';
+            const table = document.createElement('table');
+            const thead = document.createElement('thead');
+            const headRow = document.createElement('tr');
+            const thSite = document.createElement('th');
+            thSite.scope = 'col';
+            thSite.textContent = 'Site';
+            headRow.appendChild(thSite);
+            categoryOrder.forEach(category=>{
+              const th = document.createElement('th');
+              th.scope = 'col';
+              th.textContent = category;
+              headRow.appendChild(th);
+            });
+            thead.appendChild(headRow);
+            const tbody = document.createElement('tbody');
+            siteEntries.forEach(([site, map])=>{
+              const tr = document.createElement('tr');
+              const th = document.createElement('th');
+              th.scope = 'row';
+              th.textContent = site || 'Unassigned';
+              tr.appendChild(th);
+              categoryOrder.forEach(category=>{
+                const stats = map.get(category) || {completed:0,total:0};
+                const pct = stats.total ? Math.round((stats.completed / stats.total) * 100) : 0;
+                const td = document.createElement('td');
+                td.textContent = stats.total ? `${pct}%` : '—';
+                if(stats.total){
+                  td.title = `${stats.completed} of ${stats.total}`;
+                }else{
+                  td.title = 'No assignments';
+                }
+                tr.appendChild(td);
+              });
+              tbody.appendChild(tr);
+            });
+            table.append(thead, tbody);
+            enableTableSorting(table);
+            tableWrap.appendChild(table);
+            tableSection.appendChild(tableWrap);
+            host.appendChild(tableSection);
+          }
+
+          const employeeProgress = filteredEmployees.map(emp=>{
+            const bucket = state.completion[emp.id] || {};
+            const completed = filteredClasses.reduce((count, cls)=> count + (bucket && bucket[cls.id] ? 1 : 0), 0);
+            return {
+              emp,
+              pct: computeProgress(emp.id, filteredClasses),
+              completed
+            };
+          });
+          const employeesNeedingAttention = employeeProgress
+            .filter(item=>item.pct < 100)
+            .sort((a,b)=> a.pct !== b.pct ? a.pct - b.pct : a.emp.name.localeCompare(b.emp.name))
+            .slice(0,5);
+          const topPerformers = employeeProgress
+            .filter(item=>item.pct > 0)
+            .sort((a,b)=> a.pct !== b.pct ? b.pct - a.pct : a.emp.name.localeCompare(b.emp.name))
+            .slice(0,5);
+
+          const classStats = filteredClasses.map(cls=>{
+            const done = completionCountsByClass.get(cls.id) || 0;
+            const pct = totalEmployees ? Math.round((done / totalEmployees) * 100) : 0;
+            return {cls, done, pct};
+          });
+          const classesNeedingAttention = classStats
+            .filter(item=>item.pct < 100)
+            .sort((a,b)=> a.pct !== b.pct ? a.pct - b.pct : (a.cls.name || a.cls.short || '').localeCompare(b.cls.name || b.cls.short || ''))
+            .slice(0,5);
+          const classLeaders = classStats
+            .filter(item=>item.done > 0)
+            .sort((a,b)=> a.pct !== b.pct ? b.pct - a.pct : (a.cls.name || a.cls.short || '').localeCompare(b.cls.name || b.cls.short || ''))
+            .slice(0,5);
+
+          const buildSection = (title, items, emptyMessage, builder)=>{
+            const section = document.createElement('section');
+            section.className = 'tt-dash-section';
+            const heading = document.createElement('h3');
+            heading.textContent = title;
+            section.appendChild(heading);
+            if(!items.length){
+              const empty = document.createElement('p');
+              empty.className = 'tt-muted';
+              empty.textContent = emptyMessage;
+              section.appendChild(empty);
+              return section;
+            }
+            const list = document.createElement('ul');
+            list.className = 'tt-dash-list';
+            items.forEach(item=>{
+              list.appendChild(builder(item));
+            });
+            section.appendChild(list);
+            return section;
+          };
+
+          const grid = document.createElement('div');
+          grid.className = 'tt-dash-grid';
+          grid.append(
+            buildSection('Employees needing attention', employeesNeedingAttention, 'Everyone is fully trained.', item=>{
+              const li = document.createElement('li');
+              const label = document.createElement('span');
+              label.className = 'tt-dash-label';
+              label.textContent = item.emp.name;
+              const meta = document.createElement('span');
+              meta.className = 'tt-dash-meta';
+              meta.textContent = `${item.pct}% • ${item.completed} of ${totalClasses}`;
+              li.append(label, meta);
+              return li;
+            }),
+            buildSection('Top performers', topPerformers, 'No completion records yet.', item=>{
+              const li = document.createElement('li');
+              const label = document.createElement('span');
+              label.className = 'tt-dash-label';
+              label.textContent = item.emp.name;
+              const meta = document.createElement('span');
+              meta.className = 'tt-dash-meta';
+              meta.textContent = `${item.pct}% • ${item.completed} of ${totalClasses}`;
+              li.append(label, meta);
+              return li;
+            }),
+            buildSection('Classes needing attention', classesNeedingAttention, 'All classes are fully completed.', item=>{
+              const li = document.createElement('li');
+              const label = document.createElement('span');
+              label.className = 'tt-dash-label';
+              label.textContent = item.cls.name || item.cls.short || 'Untitled class';
+              const meta = document.createElement('span');
+              meta.className = 'tt-dash-meta';
+              meta.textContent = `${item.pct}% • ${item.done} of ${totalEmployees}`;
+              li.append(label, meta);
+              return li;
+            }),
+            buildSection('High-performing classes', classLeaders, 'No completions recorded yet.', item=>{
+              const li = document.createElement('li');
+              const label = document.createElement('span');
+              label.className = 'tt-dash-label';
+              label.textContent = item.cls.name || item.cls.short || 'Untitled class';
+              const meta = document.createElement('span');
+              meta.className = 'tt-dash-meta';
+              meta.textContent = `${item.pct}% • ${item.done} of ${totalEmployees}`;
+              li.append(label, meta);
+              return li;
+            })
+          );
+          host.appendChild(grid);
         }
 
         function cancelOverviewChunks(){
@@ -2936,7 +4073,7 @@ window.TRAINING_TRACKER_COURSES = [
         function renderOverviewRows(classList){
           cancelOverviewChunks();
           // Filter employees by the selected site filter before rendering rows
-          const selectedSite = elements.siteFilter ? String(elements.siteFilter.value || '') : '';
+          const selectedSite = filterState.site || '';
           const rows = (state.employees || []).filter(emp=>{
             if(!selectedSite) return true;
             // Compare organizationCode as strings; treat undefined as empty string
@@ -3001,22 +4138,30 @@ window.TRAINING_TRACKER_COURSES = [
           body.textContent = '';
           cancelOverviewChunks();
 
-          const selectedClassId = elements.classFilter.value;
-          const cat = elements.catFilter.value;
-          const group = elements.groupFilter.value;
-          const level = elements.levelFilter.value;
-          const step = elements.stepFilter.value;
+          const searchTerm = (filterState.search || '').trim().toLowerCase();
+          const matchesSearch = (cls)=>{
+            if(!searchTerm) return true;
+            const haystacks = [cls.short, cls.name];
+            return haystacks.some(value=> String(value||'').toLowerCase().includes(searchTerm));
+          };
+
+          const selectedClassId = filterState.classId;
+          const cat = filterState.category;
+          const group = filterState.group;
+          const level = filterState.level;
+          const step = filterState.step;
 
           const filtered = state.catalog.filter(c=>
             (!cat || c.area===cat) &&
             (!group || c.group===group) &&
             (!level || c.level===level) &&
-            (!step || String(c.step)===String(step))
+            (!step || String(c.step)===String(step)) &&
+            matchesSearch(c)
           );
 
           if(selectedClassId){
             const cls = state.catalog.find(c=>c.id===selectedClassId);
-            if(!cls){
+            if(!cls || !matchesSearch(cls)){
               setOverviewEmpty('No classes match the current filters.');
               return;
             }
@@ -3102,6 +4247,7 @@ window.TRAINING_TRACKER_COURSES = [
         function setTab(which){
           activeTab = which;
           const panels = {
+            dashboard: elements.dashboardSection,
             overview: elements.overviewSection,
             employee: elements.employeeSection,
             catalog: elements.catalogSection,
@@ -3113,23 +4259,20 @@ window.TRAINING_TRACKER_COURSES = [
           });
           if(panels[which]) panels[which].classList.remove('tt-hidden');
           // Reset aria-current on all tabs
+          elements.tabDashboard.removeAttribute('aria-current');
           elements.tabOverview.removeAttribute('aria-current');
           elements.tabEmployee.removeAttribute('aria-current');
           elements.tabCatalog.removeAttribute('aria-current');
           if(elements.tabEmpList) elements.tabEmpList.removeAttribute('aria-current');
           if(elements.tabJobList) elements.tabJobList.removeAttribute('aria-current');
           // Set aria-current on the selected tab
+          if(which === 'dashboard') elements.tabDashboard.setAttribute('aria-current','page');
           if(which === 'overview') elements.tabOverview.setAttribute('aria-current','page');
           if(which === 'employee') elements.tabEmployee.setAttribute('aria-current','page');
           if(which === 'catalog') elements.tabCatalog.setAttribute('aria-current','page');
           if(which === 'emplist' && elements.tabEmpList) elements.tabEmpList.setAttribute('aria-current','page');
           if(which === 'joblist' && elements.tabJobList) elements.tabJobList.setAttribute('aria-current','page');
-          // Build content for the selected tab
-          if(which === 'overview') buildOverview();
-          if(which === 'employee') renderDetail();
-          if(which === 'catalog') buildCatalog();
-          if(which === 'emplist') buildEmpList();
-          if(which === 'joblist') buildJobList();
+          renderTab(which);
         }
 
         function updateStatusButton(row, empId, classId){
@@ -3439,6 +4582,7 @@ window.TRAINING_TRACKER_COURSES = [
         }
 
         function wireEvents(){
+          addListener(elements.tabDashboard, 'click', ()=>setTab('dashboard'));
           addListener(elements.tabOverview, 'click', ()=>setTab('overview'));
           addListener(elements.tabEmployee, 'click', ()=>setTab('employee'));
           addListener(elements.tabCatalog, 'click', ()=>setTab('catalog'));
@@ -3459,27 +4603,104 @@ window.TRAINING_TRACKER_COURSES = [
             addListener(elements.resetButton, 'click', handleResetClick);
           }
 
-          addListener(elements.classFilter, 'change', ()=>buildOverview());
-          addListener(elements.catFilter, 'change', ()=>{ elements.classFilter.value=''; buildOverview(); });
-          addListener(elements.groupFilter, 'change', ()=>{ elements.classFilter.value=''; buildOverview(); });
-          addListener(elements.levelFilter, 'change', ()=>{ elements.classFilter.value=''; buildOverview(); });
-          addListener(elements.stepFilter, 'change', ()=>{ elements.classFilter.value=''; buildOverview(); });
-          // When changing site filter, reset class filter and rebuild overview
-          if(elements.siteFilter){
-            addListener(elements.siteFilter, 'change', ()=>{ elements.classFilter.value=''; buildOverview(); });
+          if(elements.saveButton){
+            elements.saveButton.addEventListener('click', exportEmbeddedSnapshot);
           }
 
-          addListener(elements.catalogFilters.search, 'input', ()=>buildCatalog());
-          addListener(elements.catalogFilters.cat, 'change', ()=>buildCatalog());
-          addListener(elements.catalogFilters.group, 'change', ()=>buildCatalog());
-          addListener(elements.catalogFilters.level, 'change', ()=>buildCatalog());
-          addListener(elements.catalogFilters.step, 'change', ()=>buildCatalog());
+          const triggerTabRenders = ()=>{
+            requestRender('overview');
+            requestRender('dashboard');
+          };
 
-          addListener(elements.empFilters.empSel, 'change', ()=>renderDetail());
-          addListener(elements.empFilters.empCat, 'change', ()=>renderDetail());
-          addListener(elements.empFilters.empGroup, 'change', ()=>renderDetail());
-          addListener(elements.empFilters.empLevel, 'change', ()=>renderDetail());
-          addListener(elements.empFilters.empStep, 'change', ()=>renderDetail());
+          addListener(elements.overviewSearch, 'input', ev=>{
+            if(updateFilterState('search', ev.target.value)){
+              triggerTabRenders();
+            }
+          });
+          addListener(elements.classFilter, 'change', ev=>{
+            if(updateFilterState('classId', ev.target.value)){
+              triggerTabRenders();
+            }
+          });
+          addListener(elements.catFilter, 'change', ev=>{
+            const changed = updateFilterState('category', ev.target.value);
+            const reset = updateFilterState('classId', '');
+            if(changed || reset){
+              triggerTabRenders();
+            }
+          });
+          addListener(elements.groupFilter, 'change', ev=>{
+            const changed = updateFilterState('group', ev.target.value);
+            const reset = updateFilterState('classId', '');
+            if(changed || reset){
+              triggerTabRenders();
+            }
+          });
+          addListener(elements.levelFilter, 'change', ev=>{
+            const changed = updateFilterState('level', ev.target.value);
+            const reset = updateFilterState('classId', '');
+            if(changed || reset){
+              triggerTabRenders();
+            }
+          });
+          addListener(elements.stepFilter, 'change', ev=>{
+            const changed = updateFilterState('step', ev.target.value);
+            const reset = updateFilterState('classId', '');
+            if(changed || reset){
+              triggerTabRenders();
+            }
+          });
+          if(elements.siteFilter){
+            addListener(elements.siteFilter, 'change', ev=>{
+              const changed = updateFilterState('site', ev.target.value);
+              const reset = updateFilterState('classId', '');
+              if(changed || reset){
+                triggerTabRenders();
+              }
+            });
+          }
+
+          if(elements.dashboardFilters){
+            const dash = elements.dashboardFilters;
+            if(dash.search){
+              addListener(dash.search, 'input', ev=>{
+                if(updateFilterState('search', ev.target.value)){
+                  triggerTabRenders();
+                }
+              });
+            }
+            if(dash.classId){
+              addListener(dash.classId, 'change', ev=>{
+                if(updateFilterState('classId', ev.target.value)){
+                  triggerTabRenders();
+                }
+              });
+            }
+            const dashFacetHandler = (key)=> ev=>{
+              const changed = updateFilterState(key, ev.target.value);
+              const reset = updateFilterState('classId', '');
+              if(changed || reset){
+                triggerTabRenders();
+              }
+            };
+            if(dash.category) addListener(dash.category, 'change', dashFacetHandler('category'));
+            if(dash.group) addListener(dash.group, 'change', dashFacetHandler('group'));
+            if(dash.level) addListener(dash.level, 'change', dashFacetHandler('level'));
+            if(dash.step) addListener(dash.step, 'change', dashFacetHandler('step'));
+            if(dash.site) addListener(dash.site, 'change', dashFacetHandler('site'));
+          }
+
+          addListener(elements.catalogFilters.search, 'input', ()=>requestRender('catalog'));
+          addListener(elements.catalogFilters.cat, 'change', ()=>requestRender('catalog'));
+          addListener(elements.catalogFilters.group, 'change', ()=>requestRender('catalog'));
+          addListener(elements.catalogFilters.level, 'change', ()=>requestRender('catalog'));
+          addListener(elements.catalogFilters.step, 'change', ()=>requestRender('catalog'));
+
+          addListener(elements.empFilters.empSel, 'change', ()=>requestRender('employee'));
+          addListener(elements.empFilters.empCat, 'change', ()=>requestRender('employee'));
+          addListener(elements.empFilters.empGroup, 'change', ()=>requestRender('employee'));
+          addListener(elements.empFilters.empLevel, 'change', ()=>requestRender('employee'));
+          addListener(elements.empFilters.empStep, 'change', ()=>requestRender('employee'));
         }
 
         async function init(){
@@ -3526,8 +4747,11 @@ window.TRAINING_TRACKER_COURSES = [
             }
             refreshAfterClassChange(true);
             buildEmpPicker();
-            buildOverview();
-            renderDetail();
+            requestRender('overview');
+            requestRender('dashboard');
+            requestRender('employee');
+            requestRender('emplist');
+            requestRender('joblist');
           },
           importText(text, options){
             return processImportText(text, options || {});
